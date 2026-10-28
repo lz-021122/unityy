@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { X, Camera, Trash2, Box } from 'lucide-react';
 import type { Issue, Priority, IssueStatus, SceneCategory, WorldPosition } from '../types';
-import { HOTLINK_SCREENSHOT } from '../data/mockIssues';
+import { DEFAULT_SCREENSHOT } from '../constants';
+import { apiErrorMessage } from '../api/client';
+import { formatApiDateTime } from '../utils/date';
 
 interface IssueDrawerProps {
   isOpen: boolean;
   mode: 'view' | 'create';
   issue: Issue | null;
   onClose: () => void;
-  onSave: (issueData: Partial<Issue>) => void;
-  onDelete?: (id: string) => void;
+  onSave: (issueData: Partial<Issue>) => Promise<void>;
+  onDelete?: (id: string) => Promise<boolean>;
   onOpenLightbox: (issue: Issue) => void;
   onLocateInScene: (issue: Issue) => void;
 }
@@ -34,34 +36,60 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
   const [pos, setPos] = useState<WorldPosition>(
     issue?.pos ?? { x: 12.354, y: 0.86, z: -5.217 }
   );
-  const [screenshot, setScreenshot] = useState(issue?.screenshot || HOTLINK_SCREENSHOT);
+  const screenshot = issue?.screenshot || DEFAULT_SCREENSHOT;
   const [reporter, setReporter] = useState(issue?.reporter ?? '管理员 (工号: ADM-01)');
   const [assignee, setAssignee] = useState(issue?.assignee ?? '待分派');
   const [deviceCode, setDeviceCode] = useState(
     issue?.deviceCode ?? (mode === 'create' ? 'DEV-BF-001' : '')
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [uploadNotice, setUploadNotice] = useState('');
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    setSubmitError('');
     if (!title.trim()) {
-      alert('请输入问题标题！');
+      setSubmitError('保存失败：请输入问题标题。');
       return;
     }
-    onSave({
-      id: issue?.id,
-      title: title.trim(),
-      desc: desc.trim(),
-      priority,
-      status,
-      scene,
-      pos,
-      screenshot,
-      reporter,
-      assignee,
-      deviceCode,
-    });
+    setIsSaving(true);
+    try {
+      await onSave({
+        title: title.trim(),
+        desc: desc.trim(),
+        priority,
+        status,
+        scene,
+        pos,
+        screenshot,
+        reporter,
+        assignee,
+        deviceCode,
+      });
+    } catch (error) {
+      setSubmitError(`保存失败：${apiErrorMessage(error)}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!issue || !onDelete) return;
+    if (!confirm(`确认删除此问题记录 (${issue.id}) 吗？`)) return;
+    setSubmitError('');
+    setIsDeleting(true);
+    try {
+      if (await onDelete(issue.id)) {
+        onClose();
+      }
+    } catch (error) {
+      setSubmitError(`删除失败：${apiErrorMessage(error)}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -107,7 +135,18 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
         </div>
 
         {/* Form Content Area */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleSubmit();
+          }}
+          className="flex-1 overflow-y-auto p-5 space-y-4 text-xs"
+        >
+          {submitError && (
+            <div className="px-3 py-2.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 leading-relaxed">
+              {submitError}
+            </div>
+          )}
           {/* Title */}
           <div>
             <label className="block text-slate-600 font-medium mb-1">
@@ -272,7 +311,7 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
               <input
                 type="text"
                 readOnly
-                value={issue?.createdAt || '保存后自动生成'}
+                value={issue ? formatApiDateTime(issue.createdAt) : '保存后自动生成'}
                 className="w-full px-2.5 py-1.5 rounded-lg border-slate-200 text-xs bg-slate-100 text-slate-500 cursor-not-allowed"
               />
             </div>
@@ -281,7 +320,7 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
               <input
                 type="text"
                 readOnly
-                value={issue?.updatedAt || '保存后自动生成'}
+                value={issue ? formatApiDateTime(issue.updatedAt) : '保存后自动生成'}
                 className="w-full px-2.5 py-1.5 rounded-lg border-slate-200 text-xs bg-slate-100 text-slate-500 cursor-not-allowed"
               />
             </div>
@@ -317,13 +356,16 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const url = URL.createObjectURL(file);
-                      setScreenshot(url);
+                      setUploadNotice('截图上传能力尚未接入，已保留当前截图路径，本次不会保存临时文件。');
+                      e.target.value = '';
                     }
                   }}
                 />
               </label>
             </div>
+            {uploadNotice && (
+              <p className="mt-2 text-[11px] leading-relaxed text-amber-600">{uploadNotice}</p>
+            )}
           </div>
 
           {/* Audit Logs Timeline */}
@@ -334,7 +376,9 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
                 {issue.auditLogs.map((log, idx) => (
                   <div key={idx} className="relative">
                     <span className="absolute -left-[17px] top-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white"></span>
-                    <div className="text-slate-500 font-mono text-[10px]">{log.time}</div>
+                    <div className="text-slate-500 font-mono text-[10px]">
+                      {formatApiDateTime(log.time)}
+                    </div>
                     <div className="text-slate-700 font-medium">{log.user}: {log.action}</div>
                   </div>
                 ))}
@@ -348,17 +392,13 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
           {mode === 'view' && issue && onDelete ? (
             <button
               type="button"
-              onClick={() => {
-                if (confirm(`确认删除此问题记录 (${issue.id}) 吗？`)) {
-                  onDelete(issue.id);
-                  onClose();
-                }
-              }}
+              onClick={() => void handleDelete()}
+              disabled={isDeleting || isSaving}
               className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg text-xs font-medium flex items-center gap-1 transition-colors"
               title="删除此问题"
             >
               <Trash2 className="w-4 h-4" />
-              <span>删除</span>
+              <span>{isDeleting ? '删除中...' : '删除'}</span>
             </button>
           ) : (
             <div></div>
@@ -374,10 +414,11 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
             </button>
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
+              disabled={isSaving || isDeleting}
               className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors shadow-2xs"
             >
-              {mode === 'create' ? '创建问题' : '保存修改'}
+              {isSaving ? '保存中...' : mode === 'create' ? '创建问题' : '保存修改'}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, ExternalLink, MapPin } from 'lucide-react';
 import type { Issue } from '../types';
+import { formatApiDateTime } from '../utils/date';
 
 interface ImageLightboxModalProps {
   issue: Issue | null;
@@ -74,7 +75,9 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
         {/* Modal Footer */}
         <div className="px-5 py-3 bg-slate-950 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
           <div>
-            <span>拍摄时间: {issue?.createdAt || '2026-10-28'}</span>
+            <span>
+              拍摄时间: {issue ? formatApiDateTime(issue.createdAt) : '未知'}
+            </span>
             <span className="mx-2">•</span>
             <span>分辨率: 1920 × 1080 (数字孪生高清视口快照)</span>
           </div>

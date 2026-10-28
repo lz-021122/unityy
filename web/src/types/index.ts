@@ -42,3 +42,64 @@ export interface FilterState {
   endDate: string;
   searchQuery: string;
 }
+
+export interface IssueAggregates {
+  total: number;
+  high: number;
+  inProgress: number;
+  resolved: number;
+  byPriority: Record<Priority, number>;
+  byStatus: Record<IssueStatus, number>;
+  byScene: Record<string, number>;
+}
+
+export interface IssueListResponse {
+  items: Issue[];
+  page: number;
+  pageSize: number;
+  total: number;
+  aggregates: IssueAggregates;
+}
+
+export interface IssueQuery {
+  query?: string;
+  priority?: Priority;
+  status?: IssueStatus;
+  scene?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export type CreateIssueInput = Pick<
+  Issue,
+  'title' | 'desc' | 'priority' | 'status' | 'scene' | 'pos'
+> &
+  Partial<
+    Pick<
+      Issue,
+      | 'screenshot'
+      | 'reporter'
+      | 'assignee'
+      | 'deviceCode'
+      | 'severityScore'
+    >
+  >
+
+export type UpdateIssueInput = Partial<
+  Pick<
+    Issue,
+    | 'title'
+    | 'desc'
+    | 'priority'
+    | 'status'
+    | 'scene'
+    | 'pos'
+    | 'screenshot'
+    | 'reporter'
+    | 'assignee'
+    | 'deviceCode'
+    | 'severityScore'
+  >
+>

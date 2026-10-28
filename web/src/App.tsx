@@ -3,9 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
-import type { Issue, NavTab, IssueStatus } from './types';
-import { generateInitialIssues, HOTLINK_SCREENSHOT } from './data/mockIssues';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type {
+  CreateIssueInput,
+  Issue,
+  IssueQuery,
+  IssueStatus,
+  NavTab,
+  UpdateIssueInput,
+} from './types';
+import { apiErrorMessage } from './api/client';
+import {
+  batchDeleteIssues,
+  batchUpdateStatus,
+  createIssue,
+  deleteIssue,
+  exportIssuesCSV,
+  fetchAllIssues,
+  getIssue,
+  updateIssue,
+  updateIssueStatus,
+} from './services/issues';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { IssueManagementScreen } from './components/IssueManagementScreen';
@@ -20,6 +38,7 @@ import { EngineStatusModal } from './components/EngineStatusModal';
 import {
   BarChart2,
   Box,
+  AlertTriangle,
   CheckCircle2,
   ClipboardCheck,
   Home,
@@ -27,7 +46,9 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [issues, setIssues] = useState<Issue[]>(() => generateInitialIssues());
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [allIssuesError, setAllIssuesError] = useState('');
+  const [dataVersion, setDataVersion] = useState(0);
   const [currentTab, setCurrentTab] = useState<NavTab>('issues');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -48,14 +69,41 @@ export default function App() {
   const [sceneTargetIssue, setSceneTargetIssue] = useState<Issue | null>(null);
 
   // Toast State
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    tone: 'success' | 'error';
+  } | null>(null);
+  const toastTimer = useRef<number | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 2800);
-  };
+  const showToast = useCallback((message: string, tone: 'success' | 'error' = 'success') => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    setToast({ message, tone });
+    toastTimer.current = window.setTimeout(() => {
+      setToast((current) => (current?.message === message ? null : current));
+    }, 3200);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchAllIssues(controller.signal)
+      .then((data) => {
+        setIssues(data);
+        setAllIssuesError('');
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setAllIssuesError(apiErrorMessage(error));
+      });
+    return () => controller.abort();
+  }, [dataVersion]);
+
+  const refreshData = useCallback(() => {
+    setDataVersion((version) => version + 1);
+  }, []);
 
   // Keyboard shortcut for Cmd+K
   useEffect(() => {
@@ -82,104 +130,119 @@ export default function App() {
     setIsDrawerOpen(true);
   };
 
-  const handleOpenViewDrawer = (issue: Issue) => {
+  const handleOpenViewDrawer = async (issue: Issue) => {
     setDrawerMode('view');
-    setActiveIssue(issue);
-    setIsDrawerOpen(true);
-  };
-
-  const handleSaveIssue = (data: Partial<Issue>) => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-
-    if (drawerMode === 'create') {
-      const nextNum = issues.length + 1;
-      const newId = '#' + String(nextNum).padStart(3, '0');
-      const newRecord: Issue = {
-        id: newId,
-        title: data.title || '巡检新隐患',
-        desc: data.desc || '',
-        priority: data.priority || 'HIGH',
-        status: data.status || 'OPEN',
-        scene: data.scene || '泵房区',
-        pos: data.pos || { x: 0, y: 0, z: 0 },
-        createdAt: nowStr,
-        updatedAt: nowStr,
-        screenshot: data.screenshot || HOTLINK_SCREENSHOT,
-        reporter: data.reporter || '当前管理员',
-        assignee: data.assignee || '待分派',
-        deviceCode: data.deviceCode || `DEV-${newId}`,
-        auditLogs: [{ time: nowStr, user: '管理员', action: '创建并录入问题' }],
-      };
-      setIssues([newRecord, ...issues]);
-      showToast(`已创建前端演示问题：${newId}`);
-    } else if (activeIssue) {
-      setIssues((prev) =>
-        prev.map((item) => {
-          if (item.id === activeIssue.id) {
-            return {
-              ...item,
-              ...data,
-              updatedAt: nowStr,
-              auditLogs: [
-                ...(item.auditLogs || []),
-                { time: nowStr, user: '管理员', action: '更新问题工况详情' },
-              ],
-            };
-          }
-          return item;
-        })
-      );
-      showToast(`已更新前端演示问题：${activeIssue.id}`);
+    setActiveIssue(null);
+    setIsDrawerOpen(false);
+    try {
+      const detail = await getIssue(issue.id);
+      setActiveIssue(detail);
+      setIsDrawerOpen(true);
+    } catch (error) {
+      showToast(`详情加载失败：${apiErrorMessage(error)}`, 'error');
     }
-    setIsDrawerOpen(false);
   };
 
-  const handleDeleteIssue = (id: string) => {
-    setIssues((prev) => prev.filter((i) => i.id !== id));
-    showToast(`已从当前前端演示数据删除：${id}`);
-    setIsDrawerOpen(false);
+  const handleSaveIssue = async (data: Partial<Issue>): Promise<void> => {
+    try {
+      if (drawerMode === 'create') {
+        const input: CreateIssueInput = {
+          title: data.title ?? '',
+          desc: data.desc ?? '',
+          priority: data.priority ?? 'HIGH',
+          status: data.status ?? 'OPEN',
+          scene: data.scene ?? '泵房区',
+          pos: data.pos ?? { x: 0, y: 0, z: 0 },
+          screenshot: data.screenshot,
+          reporter: data.reporter,
+          assignee: data.assignee,
+          deviceCode: data.deviceCode,
+          severityScore: data.severityScore,
+        };
+        const created = await createIssue(input);
+        showToast(`已创建问题：${created.id}`);
+      } else if (activeIssue) {
+        const input: UpdateIssueInput = {
+          title: data.title,
+          desc: data.desc,
+          priority: data.priority,
+          status: data.status,
+          scene: data.scene,
+          pos: data.pos,
+          screenshot: data.screenshot,
+          reporter: data.reporter,
+          assignee: data.assignee,
+          deviceCode: data.deviceCode,
+          severityScore: data.severityScore,
+        };
+        await updateIssue(activeIssue.id, input);
+        showToast(`已更新问题：${activeIssue.id}`);
+      }
+      setIsDrawerOpen(false);
+      refreshData();
+    } catch (error) {
+      showToast(`保存失败：${apiErrorMessage(error)}`, 'error');
+      throw error;
+    }
   };
 
-  const handleUpdateIssueStatus = (id: string, status: IssueStatus) => {
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    setIssues((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? {
-              ...i,
-              status,
-              updatedAt: nowStr,
-              auditLogs: [
-                ...(i.auditLogs || []),
-                { time: nowStr, user: '管理员', action: `状态变更至 ${status}` },
-              ],
-            }
-          : i
-      )
-    );
-    showToast(`演示问题 ${id} 已更新为 ${status === 'RESOLVED' ? '已解决' : '处理中'}`);
+  const handleDeleteIssue = async (id: string): Promise<boolean> => {
+    try {
+      await deleteIssue(id);
+      setIsDrawerOpen(false);
+      refreshData();
+      showToast(`已删除问题：${id}`);
+      return true;
+    } catch (error) {
+      showToast(`删除失败：${apiErrorMessage(error)}`, 'error');
+      return false;
+    }
   };
 
-  const handleBatchResolve = (ids: string[]) => {
-    const idSet = new Set(ids);
-    const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    setIssues((prev) =>
-      prev.map((i) => (idSet.has(i.id) ? { ...i, status: 'RESOLVED', updatedAt: nowStr } : i))
-    );
-    showToast(`已将 ${ids.length} 项演示问题标记为已解决`);
+  const handleUpdateIssueStatus = async (
+    id: string,
+    status: IssueStatus,
+  ): Promise<boolean> => {
+    try {
+      await updateIssueStatus(id, status);
+      refreshData();
+      showToast(`问题 ${id} 已更新为 ${status === 'RESOLVED' ? '已解决' : '处理中'}`);
+      return true;
+    } catch (error) {
+      showToast(`状态更新失败：${apiErrorMessage(error)}`, 'error');
+      return false;
+    }
   };
 
-  const handleBatchDelete = (ids: string[]) => {
-    const idSet = new Set(ids);
-    setIssues((prev) => prev.filter((i) => !idSet.has(i.id)));
-    showToast(`已从当前前端演示数据删除 ${ids.length} 条记录`);
+  const handleBatchResolve = async (ids: string[]): Promise<boolean> => {
+    try {
+      const result = await batchUpdateStatus(ids, 'RESOLVED');
+      refreshData();
+      showToast(`已将 ${result.updated} 项问题标记为已解决`);
+      return true;
+    } catch (error) {
+      showToast(`批量状态更新失败：${apiErrorMessage(error)}`, 'error');
+      return false;
+    }
+  };
+
+  const handleBatchDelete = async (ids: string[]): Promise<boolean> => {
+    try {
+      const result = await batchDeleteIssues(ids);
+      refreshData();
+      showToast(`已删除 ${result.deleted} 条问题记录`);
+      return true;
+    } catch (error) {
+      showToast(`批量删除失败：${apiErrorMessage(error)}`, 'error');
+      return false;
+    }
   };
 
   const handleLocateInScene = (issue: Issue) => {
     setSceneTargetIssue(issue);
     setCurrentTab('scenes');
     setIsDrawerOpen(false);
-    showToast(`已在演示场景中锁定坐标 (${issue.pos.x}, ${issue.pos.y}, ${issue.pos.z})`);
+    showToast(`已在场景中锁定坐标 (${issue.pos.x}, ${issue.pos.y}, ${issue.pos.z})`);
   };
 
   const handleOpenLightbox = (issue: Issue) => {
@@ -187,24 +250,15 @@ export default function App() {
     setLightboxImage(issue.screenshot);
   };
 
-  const handleExportData = () => {
-    // Generate CSV string
-    const headers = 'ID,标题,优先级,状态,场景,坐标X,坐标Y,坐标Z,创建时间,更新时间\n';
-    const rows = issues
-      .map(
-        (i) =>
-          `"${i.id}","${i.title}","${i.priority}","${i.status}","${i.scene}",${i.pos.x},${i.pos.y},${i.pos.z},"${i.createdAt}","${i.updatedAt}"`
-      )
-      .join('\n');
-    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `unity_inspect_issues_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast('问题清单数据已成功导出为 CSV 文件');
+  const handleExportData = async (params: IssueQuery = {}): Promise<boolean> => {
+    try {
+      await exportIssuesCSV(params);
+      showToast('已导出当前筛选范围内的全部问题');
+      return true;
+    } catch (error) {
+      showToast(`导出失败：${apiErrorMessage(error)}`, 'error');
+      return false;
+    }
   };
 
   const openIssuesCount = issues.filter((i) => i.status === 'OPEN').length;
@@ -226,6 +280,19 @@ export default function App() {
         onOpenEngineStatus={() => setIsEngineStatusOpen(true)}
       />
 
+      {allIssuesError && currentTab !== 'issues' && (
+        <div className="mx-6 mt-3 px-4 py-2.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center justify-between gap-3 shrink-0">
+          <span>无法加载后端问题数据：{allIssuesError}</span>
+          <button
+            type="button"
+            onClick={refreshData}
+            className="px-2.5 py-1 rounded border border-rose-300 bg-white font-medium"
+          >
+            重试
+          </button>
+        </div>
+      )}
+
       {/* Main Body Area with Sidebar and Content */}
       <div className="flex flex-1 relative overflow-hidden pb-16 md:pb-0">
         {/* Left Sidebar */}
@@ -239,7 +306,7 @@ export default function App() {
         {/* Dynamic Screen View */}
         {currentTab === 'issues' && (
           <IssueManagementScreen
-            issues={issues}
+            refreshVersion={dataVersion}
             onOpenCreateDrawer={handleOpenCreateDrawer}
             onOpenViewDrawer={handleOpenViewDrawer}
             onLocateInScene={handleLocateInScene}
@@ -272,7 +339,10 @@ export default function App() {
         )}
 
         {currentTab === 'analytics' && (
-          <AnalyticsScreen issues={issues} onExportReport={handleExportData} />
+          <AnalyticsScreen
+            issues={issues}
+            onExportReport={() => void handleExportData()}
+          />
         )}
 
         {currentTab === 'settings' && <SettingsScreen onShowToast={showToast} />}
@@ -335,10 +405,18 @@ export default function App() {
       />
 
       {/* Toast Notification Notification Banner */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-medium z-50 flex items-center gap-2 transform transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 pointer-events-none">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-medium z-50 flex items-center gap-2 transform transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 pointer-events-none ${
+            toast.tone === 'error' ? 'bg-rose-700' : 'bg-slate-900'
+          }`}
+        >
+          {toast.tone === 'error' ? (
+            <AlertTriangle className="w-4 h-4 text-rose-200 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          )}
+          <span>{toast.message}</span>
         </div>
       )}
     </div>

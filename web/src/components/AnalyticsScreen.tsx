@@ -26,7 +26,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ issues, onExpo
 
   const openPct = total > 0 ? Math.round((open / total) * 100) : 0;
   const inProgPct = total > 0 ? Math.round((inProgress / total) * 100) : 0;
-  const resolvedPct = Math.max(0, 100 - openPct - inProgPct);
+  const resolvedPct =
+    total > 0 ? Math.max(0, 100 - openPct - inProgPct) : 0;
 
   // 7-day trend mock numbers
   const weeklyTrends = [
@@ -53,6 +54,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ issues, onExpo
           <p className="text-xs text-slate-500 mt-0.5">
             隐患发展趋势、多维分布模型与设备可靠性量化评估
           </p>
+          <span className="inline-block mt-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+            趋势与衍生指标为演示数据
+          </span>
         </div>
 
         <div className="flex items-center gap-3">

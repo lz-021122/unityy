@@ -1,5 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import type { Issue, Priority, IssueStatus, SceneCategory } from '../types';
+import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import type {
+  Issue,
+  IssueAggregates,
+  IssueQuery,
+  Priority,
+  IssueStatus,
+  SceneCategory,
+} from '../types';
+import { apiErrorMessage } from '../api/client';
+import { listIssues } from '../services/issues';
+import { formatApiDateTime } from '../utils/date';
 import {
   Plus,
   RotateCcw,
@@ -16,21 +26,33 @@ import {
 } from 'lucide-react';
 
 interface IssueManagementScreenProps {
-  issues: Issue[];
+  refreshVersion: number;
   onOpenCreateDrawer: () => void;
   onOpenViewDrawer: (issue: Issue) => void;
   onLocateInScene: (issue: Issue) => void;
-  onUpdateIssueStatus: (id: string, status: IssueStatus) => void;
-  onDeleteIssue: (id: string) => void;
-  onBatchResolve: (ids: string[]) => void;
-  onBatchDelete: (ids: string[]) => void;
+  onUpdateIssueStatus: (id: string, status: IssueStatus) => Promise<boolean>;
+  onDeleteIssue: (id: string) => Promise<boolean>;
+  onBatchResolve: (ids: string[]) => Promise<boolean>;
+  onBatchDelete: (ids: string[]) => Promise<boolean>;
   searchQuery: string;
   onResetSearch: () => void;
-  onExportData: () => void;
+  onExportData: (params: IssueQuery) => Promise<boolean>;
 }
 
+const EMPTY_AGGREGATES: IssueAggregates = {
+  total: 0,
+  high: 0,
+  inProgress: 0,
+  resolved: 0,
+  byPriority: { HIGH: 0, MEDIUM: 0, LOW: 0 },
+  byStatus: { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0 },
+  byScene: { 泵房区: 0, 配电室: 0, 管道区: 0, 其他: 0 },
+};
+
+const PAGE_SIZE = 5;
+
 export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
-  issues,
+  refreshVersion,
   onOpenCreateDrawer,
   onOpenViewDrawer,
   onLocateInScene,
@@ -51,6 +73,13 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
 
   // Table selection & pagination
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [paginatedIssues, setPaginatedIssues] = useState<Issue[]>([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [aggregates, setAggregates] = useState<IssueAggregates>(EMPTY_AGGREGATES);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [requestVersion, setRequestVersion] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
   const [pageState, setPageState] = useState({
     page: 1,
     search: searchQuery,
@@ -63,73 +92,63 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
       return { page, search: searchQuery };
     });
   };
-  const pageSize = 5; // Exactly 5 rows per page to match screen.png (#001 - #005)
+  const pageSize = PAGE_SIZE;
+  const deferredSearch = useDeferredValue(searchQuery.trim());
 
   // Active action menu row
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  // Filtered dataset
-  const filteredIssues = useMemo(() => {
-    return issues.filter((item) => {
-      // Query filter
-      const q = searchQuery.trim().toLowerCase();
-      const matchesQuery =
-        !q ||
-        item.title.toLowerCase().includes(q) ||
-        item.desc.toLowerCase().includes(q) ||
-        item.id.toLowerCase().includes(q) ||
-        item.scene.toLowerCase().includes(q);
-
-      // Priority filter
-      const matchesPriority = filterPriority === 'ALL' || item.priority === filterPriority;
-
-      // Status filter
-      const matchesStatus = filterStatus === 'ALL' || item.status === filterStatus;
-
-      // Scene filter
-      const matchesScene = filterScene === 'ALL' || item.scene === filterScene;
-
-      // Date range filter
-      let matchesDate = true;
-      if (startDate) {
-        matchesDate = matchesDate && item.createdAt.slice(0, 10) >= startDate;
-      }
-      if (endDate) {
-        matchesDate = matchesDate && item.createdAt.slice(0, 10) <= endDate;
-      }
-
-      return matchesQuery && matchesPriority && matchesStatus && matchesScene && matchesDate;
-    });
-  }, [issues, searchQuery, filterPriority, filterStatus, filterScene, startDate, endDate]);
-
-  const totalRecords = filteredIssues.length;
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
 
-  // Current page records
-  const paginatedIssues = useMemo(() => {
-    const page = Math.min(Math.max(1, currentPage), totalPages);
-    const start = (page - 1) * pageSize;
-    return filteredIssues.slice(start, start + pageSize);
-  }, [filteredIssues, currentPage, totalPages]);
+  const stats = {
+    total: aggregates.total,
+    high: aggregates.high,
+    med: aggregates.byPriority.MEDIUM ?? 0,
+    low: aggregates.byPriority.LOW ?? 0,
+    open: aggregates.byStatus.OPEN ?? 0,
+    inProgress: aggregates.inProgress,
+    resolved: aggregates.resolved,
+    pump: aggregates.byScene.泵房区 ?? 0,
+    power: aggregates.byScene.配电室 ?? 0,
+    pipe: aggregates.byScene.管道区 ?? 0,
+    other: aggregates.byScene.其他 ?? 0,
+  };
 
-  // Statistics for KPI cards and charts, derived from the same filtered dataset as the table
-  const stats = useMemo(() => {
-    const total = filteredIssues.length;
-    const high = filteredIssues.filter((i) => i.priority === 'HIGH').length;
-    const med = filteredIssues.filter((i) => i.priority === 'MEDIUM').length;
-    const low = filteredIssues.filter((i) => i.priority === 'LOW').length;
+  const queryParams = useMemo<IssueQuery>(
+    () => ({
+      query: deferredSearch || undefined,
+      priority: filterPriority === 'ALL' ? undefined : filterPriority,
+      status: filterStatus === 'ALL' ? undefined : filterStatus,
+      scene: filterScene === 'ALL' ? undefined : filterScene,
+      createdFrom: startDate || undefined,
+      createdTo: endDate || undefined,
+    }),
+    [deferredSearch, filterPriority, filterScene, filterStatus, endDate, startDate],
+  );
 
-    const open = filteredIssues.filter((i) => i.status === 'OPEN').length;
-    const inProgress = filteredIssues.filter((i) => i.status === 'IN_PROGRESS').length;
-    const resolved = filteredIssues.filter((i) => i.status === 'RESOLVED').length;
-
-    const pump = filteredIssues.filter((i) => i.scene === '泵房区').length;
-    const power = filteredIssues.filter((i) => i.scene === '配电室').length;
-    const pipe = filteredIssues.filter((i) => i.scene === '管道区').length;
-    const other = filteredIssues.filter((i) => i.scene === '其他').length;
-
-    return { total, high, med, low, open, inProgress, resolved, pump, power, pipe, other };
-  }, [filteredIssues]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      setIsLoading(true);
+      setLoadError('');
+      try {
+        const result = await listIssues(
+          { ...queryParams, page: currentPage, pageSize },
+          controller.signal,
+        );
+        setPaginatedIssues(result.items);
+        setTotalRecords(result.total);
+        setAggregates(result.aggregates);
+        setSelectedIds(new Set());
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setLoadError(apiErrorMessage(error));
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    })();
+    return () => controller.abort();
+  }, [currentPage, pageSize, queryParams, refreshVersion, requestVersion]);
 
   const handleResetFilters = () => {
     setFilterPriority('ALL');
@@ -144,9 +163,18 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(filteredIssues.map((i) => i.id)));
+      setSelectedIds(new Set(paginatedIssues.map((i) => i.id)));
     } else {
       setSelectedIds(new Set());
+    }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await onExportData(queryParams);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -223,20 +251,21 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">问题管理</h1>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
-              演示数据
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+              API 数据
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">查看、筛选和管理巡检发现的问题</p>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={onExportData}
-            className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
+            onClick={() => void handleExport()}
+            disabled={isExporting || isLoading}
+            className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors shadow-2xs"
             title="导出当前问题报表为 CSV / JSON"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>导出报表</span>
+            <span>{isExporting ? '导出中...' : '导出报表'}</span>
           </button>
         </div>
       </div>
@@ -345,6 +374,22 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
         </button>
       </div>
 
+      {loadError && (
+        <div className="px-4 py-3 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-700 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            无法加载问题数据：{loadError}
+          </span>
+          <button
+            type="button"
+            onClick={() => setRequestVersion((version) => version + 1)}
+            className="px-3 py-1 rounded-lg bg-white border border-rose-300 font-medium"
+          >
+            重试
+          </button>
+        </div>
+      )}
+
       {/* Batch Action Bar if rows are selected */}
       {selectedIds.size > 0 && (
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs animate-in fade-in duration-150">
@@ -355,8 +400,11 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                onBatchResolve(Array.from(selectedIds));
-                setSelectedIds(new Set());
+                void (async () => {
+                  if (await onBatchResolve(Array.from(selectedIds))) {
+                    setSelectedIds(new Set());
+                  }
+                })();
               }}
               className="px-3 py-1 bg-white border border-blue-300 text-blue-700 hover:bg-blue-100 rounded-lg font-medium transition-colors"
             >
@@ -365,8 +413,11 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
             <button
               onClick={() => {
                 if (confirm(`确认批量删除这 ${selectedIds.size} 条记录吗？`)) {
-                  onBatchDelete(Array.from(selectedIds));
-                  setSelectedIds(new Set());
+                  void (async () => {
+                    if (await onBatchDelete(Array.from(selectedIds))) {
+                      setSelectedIds(new Set());
+                    }
+                  })();
                 }
               }}
               className="px-3 py-1 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 rounded-lg font-medium transition-colors"
@@ -474,7 +525,16 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {paginatedIssues.length === 0 ? (
+              {isLoading && paginatedIssues.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-slate-500">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
+                      正在加载问题数据...
+                    </span>
+                  </td>
+                </tr>
+              ) : paginatedIssues.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-slate-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
@@ -516,8 +576,12 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-500">{item.createdAt}</td>
-                      <td className="py-3 px-4 text-slate-500">{item.updatedAt}</td>
+                      <td className="py-3 px-4 text-slate-500">
+                        {formatApiDateTime(item.createdAt)}
+                      </td>
+                      <td className="py-3 px-4 text-slate-500">
+                        {formatApiDateTime(item.updatedAt)}
+                      </td>
                       <td
                         className="py-3 px-4 text-center relative"
                         onClick={(e) => e.stopPropagation()}
@@ -555,7 +619,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
                                   <button
                                     onClick={() => {
                                       setActiveMenuId(null);
-                                      onUpdateIssueStatus(item.id, 'RESOLVED');
+                                      void onUpdateIssueStatus(item.id, 'RESOLVED');
                                     }}
                                     className="w-full px-3 py-1.5 hover:bg-slate-50 text-emerald-600 flex items-center gap-1.5"
                                   >
@@ -566,7 +630,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
                                   <button
                                     onClick={() => {
                                       setActiveMenuId(null);
-                                      onUpdateIssueStatus(item.id, 'IN_PROGRESS');
+                                      void onUpdateIssueStatus(item.id, 'IN_PROGRESS');
                                     }}
                                     className="w-full px-3 py-1.5 hover:bg-slate-50 text-amber-600 flex items-center gap-1.5"
                                   >
@@ -578,7 +642,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
                                   onClick={() => {
                                     setActiveMenuId(null);
                                     if (confirm(`确认删除问题 ${item.id} 吗？`)) {
-                                      onDeleteIssue(item.id);
+                                      void onDeleteIssue(item.id);
                                     }
                                   }}
                                   className="w-full px-3 py-1.5 hover:bg-rose-50 text-rose-600 flex items-center gap-1.5 border-t border-slate-100 mt-1"

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Issue, NavTab } from '../types';
 import { ShieldCheck, AlertTriangle, ArrowRight, TrendingUp, Box } from 'lucide-react';
+import { formatApiDateTime } from '../utils/date';
 
 interface HomeScreenProps {
   issues: Issue[];
@@ -163,7 +164,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         坐标: ({item.pos.x}, {item.pos.y}, {item.pos.z})
                       </span>
                       <span>•</span>
-                      <span>上报: {item.createdAt}</span>
+                      <span>上报: {formatApiDateTime(item.createdAt)}</span>
                     </div>
                   </div>
                 </div>

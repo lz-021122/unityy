@@ -4,7 +4,7 @@
 
 Unity Inspect 用于构建 Unity 场景巡检、问题管理和结果展示的一体化系统。
 
-当前前端已导入 AI Studio 导出的完整管理端界面，并使用统一的本地演示数据；Go 端已提供标准库 REST API 与本地 JSON 持久化。React 尚未切换为 API 数据源，Unity 业务与实时桥接仍未开始。
+当前前端已导入 AI Studio 导出的完整管理端界面，并接入 Go 标准库 REST API 与本地 JSON 持久化。Unity 业务与实时桥接仍未开始。
 
 ## 当前目录结构
 
@@ -67,13 +67,13 @@ lucide-react : 0.546.0
 - Go 模块已初始化，临时模块路径为 `example.com/unity-inspect/server`。
 - Go API 已实现问题查询、创建、更新、状态操作、删除和 CSV 导出。
 - Go 使用本地 JSON 持久化，运行时数据位于 `server/data/issues.json`。
+- React 问题管理、统计、场景和 CSV 已接入 Go API。
 - 项目级 `.gitignore` 和基础文档已建立。
 - 本地 Git 仓库使用 `main` 分支。
 
 ## 尚未实现
 
 - Unity 巡检脚本
-- React 与 Go API 的数据接入
 - Unity 与 Web、Go 服务之间的业务数据交互
 - Unity WebSocket 实时桥接
 - 前端演示数据的服务端持久化
@@ -103,3 +103,6 @@ go run .
 ```
 
 服务默认仅监听 `127.0.0.1:8080`。
+
+联调时需要同时运行 Go API 与前端开发服务。前端默认请求
+`http://127.0.0.1:8080/api`，可通过 `VITE_API_BASE_URL` 覆盖。
