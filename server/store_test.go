@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -131,6 +133,109 @@ func TestStoreCRUDStatusAuditAndPersistence(t *testing.T) {
 	}
 	if err := store.Delete("#999"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected not found for missing delete, got %v", err)
+	}
+}
+
+func TestStoreIDHighWaterMarkPersistsAfterDeleteAndRestart(t *testing.T) {
+	store, _, dataPath := newTestStore(t, standardTestIssues()[:2])
+	store.now = func() time.Time { return mustTime("2026-10-30T08:00:00Z") }
+
+	created, err := store.Create(CreateIssueRequest{
+		Title: "待删除的最大编号问题",
+		Scene: "其他",
+		Pos:   &Position{X: 1, Y: 2, Z: 3},
+	}, "id-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.ID != "#003" {
+		t.Fatalf("expected #003, got %s", created.ID)
+	}
+	if err := store.Delete(created.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	reloaded, err := NewStore("unused-seed.json", dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, err := reloaded.Create(CreateIssueRequest{
+		Title: "重启后创建的问题",
+		Scene: "其他",
+		Pos:   &Position{X: 2, Y: 3, Z: 4},
+	}, "id-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.ID != "#004" {
+		t.Fatalf("deleted #003 was reused or high-water mark was lost: got %s", next.ID)
+	}
+}
+
+func TestStoreLoadsLegacyArrayWithoutOverwriting(t *testing.T) {
+	dir := t.TempDir()
+	legacyIssues := []Issue{
+		testIssue("#001", "旧记录一", PriorityHigh, StatusOpen, "泵房区", mustTime("2026-10-28T01:00:00Z")),
+		testIssue("#010", "旧记录十", PriorityLow, StatusOpen, "其他", mustTime("2026-10-28T02:00:00Z")),
+	}
+	seedPath, dataPath := writeIssueSeed(t, dir, legacyIssues)
+	before, err := os.ReadFile(seedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(dataPath, before, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	store, err := NewStore(seedPath, dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	afterLoad, err := os.ReadFile(dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, afterLoad) {
+		t.Fatal("legacy runtime data was overwritten during load")
+	}
+	created, err := store.Create(CreateIssueRequest{
+		Title: "兼容后新增",
+		Scene: "其他",
+		Pos:   &Position{X: 3, Y: 2, Z: 1},
+	}, "legacy-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.ID != "#011" {
+		t.Fatalf("legacy high-water mark was not preserved: got %s", created.ID)
+	}
+}
+
+func TestStoreDoesNotAdvanceStateWhenPersistenceFails(t *testing.T) {
+	store, _, _ := newTestStore(t, standardTestIssues()[:1])
+	before := len(store.FilterAll(Filter{}))
+	beforeNextID := store.nextID
+
+	blockerDir := t.TempDir()
+	blocker := filepath.Join(blockerDir, "not-a-directory")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store.dataPath = filepath.Join(blocker, "issues.json")
+
+	_, err := store.Create(CreateIssueRequest{
+		Title: "不应成功的问题",
+		Scene: "其他",
+		Pos:   &Position{},
+	}, "failure-test")
+	if err == nil {
+		t.Fatal("expected persistence failure")
+	}
+	if got := len(store.FilterAll(Filter{})); got != before {
+		t.Fatalf("in-memory issues changed after persistence failure: %d -> %d", before, got)
+	}
+	if store.nextID != beforeNextID {
+		t.Fatalf("next ID changed after persistence failure: %d -> %d", beforeNextID, store.nextID)
 	}
 }
 

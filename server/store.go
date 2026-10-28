@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,8 +48,15 @@ type ListResult struct {
 type Store struct {
 	mu       sync.RWMutex
 	issues   []Issue
+	nextID   int
 	dataPath string
 	now      func() time.Time
+}
+
+type persistedState struct {
+	Version int     `json:"version"`
+	NextID  int     `json:"nextId"`
+	Issues  []Issue `json:"issues"`
 }
 
 func NewStore(seedPath, dataPath string) (*Store, error) {
@@ -66,8 +74,8 @@ func NewStore(seedPath, dataPath string) (*Store, error) {
 		}
 	}
 
-	var issues []Issue
-	if err := json.Unmarshal(data, &issues); err != nil {
+	issues, nextID, _, err := decodeIssueData(data)
+	if err != nil {
 		return nil, fmt.Errorf("decode issue data: %w", err)
 	}
 	if issues == nil {
@@ -77,9 +85,15 @@ func NewStore(seedPath, dataPath string) (*Store, error) {
 		return nil, fmt.Errorf("validate issue data: %w", err)
 	}
 
-	store := &Store{issues: issues, dataPath: dataPath, now: now}
+	if nextID <= maxNumericID(issues) {
+		nextID = maxNumericID(issues) + 1
+	}
+	if nextID < 1 {
+		nextID = 1
+	}
+	store := &Store{issues: issues, nextID: nextID, dataPath: dataPath, now: now}
 	if fromSeed {
-		if err := store.persistAtomic(issues); err != nil {
+		if err := store.persistAtomic(issues, nextID); err != nil {
 			return nil, fmt.Errorf("initialize runtime data: %w", err)
 		}
 	}
@@ -153,7 +167,7 @@ func (s *Store) Create(req CreateIssueRequest, actor string) (Issue, error) {
 	defer s.mu.Unlock()
 	now := s.now().UTC()
 	issue := Issue{
-		ID:            s.nextIDLocked(),
+		ID:            fmt.Sprintf("#%03d", s.nextID),
 		Title:         normalized.Title,
 		Desc:          normalized.Desc,
 		Priority:      normalized.Priority,
@@ -176,10 +190,12 @@ func (s *Store) Create(req CreateIssueRequest, actor string) (Issue, error) {
 	candidate := make([]Issue, 0, len(s.issues)+1)
 	candidate = append(candidate, issue)
 	candidate = append(candidate, s.issues...)
-	if err := s.persistAtomic(candidate); err != nil {
+	nextID := s.nextID + 1
+	if err := s.persistAtomic(candidate, nextID); err != nil {
 		return Issue{}, err
 	}
 	s.issues = candidate
+	s.nextID = nextID
 	return cloneIssue(issue), nil
 }
 
@@ -244,7 +260,7 @@ func (s *Store) Update(id string, req UpdateIssueRequest, actor string) (Issue, 
 
 	candidate := cloneIssues(s.issues)
 	candidate[index] = updated
-	if err := s.persistAtomic(candidate); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID); err != nil {
 		return Issue{}, err
 	}
 	s.issues = candidate
@@ -289,7 +305,7 @@ func (s *Store) BatchUpdateStatus(ids []string, status IssueStatus, actor string
 			Time: now, User: actor, Action: "批量状态变更至 " + string(status),
 		})
 	}
-	if err := s.persistAtomic(candidate); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID); err != nil {
 		return 0, err
 	}
 	s.issues = candidate
@@ -306,7 +322,7 @@ func (s *Store) Delete(id string) error {
 	candidate := make([]Issue, 0, len(s.issues)-1)
 	candidate = append(candidate, cloneIssues(s.issues[:index])...)
 	candidate = append(candidate, cloneIssues(s.issues[index+1:])...)
-	if err := s.persistAtomic(candidate); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID); err != nil {
 		return err
 	}
 	s.issues = candidate
@@ -336,7 +352,7 @@ func (s *Store) BatchDelete(ids []string) (int, error) {
 			candidate = append(candidate, cloneIssue(issue))
 		}
 	}
-	if err := s.persistAtomic(candidate); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID); err != nil {
 		return 0, err
 	}
 	s.issues = candidate
@@ -399,25 +415,6 @@ func (s *Store) filterLocked(filter Filter) ([]Issue, Aggregates) {
 	return filtered, aggregates
 }
 
-func (s *Store) nextIDLocked() string {
-	maxID := 0
-	seen := make(map[string]struct{}, len(s.issues))
-	for _, issue := range s.issues {
-		seen[issue.ID] = struct{}{}
-		if strings.HasPrefix(issue.ID, "#") {
-			if value, err := strconv.Atoi(strings.TrimPrefix(issue.ID, "#")); err == nil && value > maxID {
-				maxID = value
-			}
-		}
-	}
-	for next := maxID + 1; ; next++ {
-		candidate := fmt.Sprintf("#%03d", next)
-		if _, exists := seen[candidate]; !exists {
-			return candidate
-		}
-	}
-}
-
 func (s *Store) indexLocked(id string) int {
 	for index, issue := range s.issues {
 		if issue.ID == id {
@@ -445,11 +442,16 @@ func (s *Store) requiredIndicesLocked(ids []string) ([]int, error) {
 	return indices, nil
 }
 
-func (s *Store) persistAtomic(issues []Issue) error {
+func (s *Store) persistAtomic(issues []Issue, nextID int) error {
 	if err := os.MkdirAll(filepath.Dir(s.dataPath), 0o750); err != nil {
 		return fmt.Errorf("create data directory: %w", err)
 	}
-	data, err := json.MarshalIndent(issues, "", "  ")
+	state := persistedState{
+		Version: 1,
+		NextID:  nextID,
+		Issues:  issues,
+	}
+	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode issues: %w", err)
 	}
@@ -481,6 +483,45 @@ func (s *Store) persistAtomic(issues []Issue) error {
 		return fmt.Errorf("replace data file: %w", err)
 	}
 	return nil
+}
+
+func decodeIssueData(data []byte) ([]Issue, int, bool, error) {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return nil, 0, false, errors.New("issue data is empty")
+	}
+	switch trimmed[0] {
+	case '[':
+		var issues []Issue
+		if err := json.Unmarshal(trimmed, &issues); err != nil {
+			return nil, 0, true, err
+		}
+		return issues, maxNumericID(issues) + 1, true, nil
+	case '{':
+		var state persistedState
+		if err := json.Unmarshal(trimmed, &state); err != nil {
+			return nil, 0, false, err
+		}
+		if state.Version != 1 {
+			return nil, 0, false, fmt.Errorf("unsupported issue data version %d", state.Version)
+		}
+		return state.Issues, state.NextID, false, nil
+	default:
+		return nil, 0, false, errors.New("issue data must be a JSON array or object")
+	}
+}
+
+func maxNumericID(issues []Issue) int {
+	maxID := 0
+	for _, issue := range issues {
+		if !strings.HasPrefix(issue.ID, "#") {
+			continue
+		}
+		if value, err := strconv.Atoi(strings.TrimPrefix(issue.ID, "#")); err == nil && value > maxID {
+			maxID = value
+		}
+	}
+	return maxID
 }
 
 func cloneIssue(issue Issue) Issue {
