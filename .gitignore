@@ -1,0 +1,62 @@
+# Retired incomplete Unity project at the repository root
+/unity/
+
+# Unity generated content
+/unity/Library/
+/unity/Temp/
+/unity/Obj/
+/unity/Logs/
+/unity/UserSettings/
+/unity/Build/
+/unity/Builds/
+
+/unity-smoke-test/Library/
+/unity-smoke-test/Temp/
+/unity-smoke-test/Obj/
+/unity-smoke-test/Logs/
+/unity-smoke-test/UserSettings/
+/unity-smoke-test/Build/
+/unity-smoke-test/Builds/
+
+# Node.js generated content
+/web/node_modules/
+/web/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Go build and test artifacts
+/server/*.exe
+/server/server
+/server/*.test
+/server/*.out
+/server/*.prof
+/server/coverage.*
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+*.local
+
+# Common IDE files
+/.vs/
+/.vscode/
+/unity-smoke-test/.vscode/
+/web/.vscode/
+/.idea/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.swp
+*~
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

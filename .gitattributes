@@ -1,0 +1,11 @@
+# Unity YAML serialization preserves a trailing space after empty values.
+*.unity whitespace=-trailing-space
+*.asset whitespace=-trailing-space
+*.meta whitespace=-trailing-space
+*.prefab whitespace=-trailing-space
+*.mat whitespace=-trailing-space
+*.anim whitespace=-trailing-space
+*.controller whitespace=-trailing-space
+*.overrideController whitespace=-trailing-space
+*.wlt whitespace=-trailing-space
+unity-smoke-test/Assets/TutorialInfo/Scripts/Editor/ReadmeEditor.cs whitespace=-trailing-space
