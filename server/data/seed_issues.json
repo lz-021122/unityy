@@ -1,0 +1,1539 @@
+[
+  {
+    "id": "#001",
+    "title": "泵出口法兰渗漏",
+    "desc": "泵出口法兰连接处存在微小液体渗漏迹象，螺栓可能预紧力不足或密封垫圈老化磨损，需停机紧固或更换密封件。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": 12.354,
+      "y": 0.86,
+      "z": -5.217
+    },
+    "createdAt": "2026-10-28T04:14:00.000Z",
+    "updatedAt": "2026-10-28T04:14:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "张工 (巡检一班)",
+    "assignee": "李工 (机械维保组)",
+    "deviceCode": "PUMP-A01-FLANGE",
+    "severityScore": 88,
+    "auditLogs": [
+      {
+        "time": "2026-10-28T04:14:00.000Z",
+        "user": "张工",
+        "action": "通过 Unity 数字孪生巡检手持端上报隐患"
+      },
+      {
+        "time": "2026-10-28T04:15:00.000Z",
+        "user": "系统AI诊断",
+        "action": "智能图像比对完成，置信度 96.2%"
+      }
+    ]
+  },
+  {
+    "id": "#002",
+    "title": "电机温度异常",
+    "desc": "2号循环电机外壳红外测温达到 78.5℃，超出额定工作阈值 (70℃)，轴承箱伴随异常高频振动与轻微异响。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "泵房区",
+    "pos": {
+      "x": 8.421,
+      "y": 1.036,
+      "z": -3.562
+    },
+    "createdAt": "2026-10-28T03:03:00.000Z",
+    "updatedAt": "2026-10-28T03:20:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "王工 (电气点检员)",
+    "assignee": "陈主管 (动力车间)",
+    "deviceCode": "MTR-02-CORE",
+    "severityScore": 65,
+    "auditLogs": [
+      {
+        "time": "2026-10-28T03:03:00.000Z",
+        "user": "王工",
+        "action": "巡检记录：红外测温热斑识别"
+      },
+      {
+        "time": "2026-10-28T03:20:00.000Z",
+        "user": "陈主管",
+        "action": "已派单至电机维保小组，当前处于降载观察中"
+      }
+    ]
+  },
+  {
+    "id": "#003",
+    "title": "控制柜指示灯异常",
+    "desc": "10kV 配电室 3 号高压进线柜储能指示灯频闪失灵，断路器储能机构信号微动开关可能接触不良。",
+    "priority": "LOW",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": -2.115,
+      "y": 0.942,
+      "z": 1.337
+    },
+    "createdAt": "2026-10-28T02:26:00.000Z",
+    "updatedAt": "2026-10-28T02:26:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "赵巡检",
+    "assignee": "待分派",
+    "deviceCode": "SWGR-10KV-03",
+    "severityScore": 32,
+    "auditLogs": [
+      {
+        "time": "2026-10-28T02:26:00.000Z",
+        "user": "赵巡检",
+        "action": "日常巡检登记"
+      }
+    ]
+  },
+  {
+    "id": "#004",
+    "title": "管道连接处松动",
+    "desc": "冷却水主供水管 DN250 拐弯处管卡支架膨胀螺栓脱落松动，流体流动引发管道低频共振。",
+    "priority": "HIGH",
+    "status": "RESOLVED",
+    "scene": "管道区",
+    "pos": {
+      "x": 5.663,
+      "y": 1.218,
+      "z": -4.891
+    },
+    "createdAt": "2026-10-27T08:45:00.000Z",
+    "updatedAt": "2026-10-28T01:30:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "刘工 (管道巡检班)",
+    "assignee": "孙工 (结构加固组)",
+    "deviceCode": "PIPE-DN250-BRACKET",
+    "severityScore": 82,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T08:45:00.000Z",
+        "user": "刘工",
+        "action": "发现支架晃动脱落"
+      },
+      {
+        "time": "2026-10-28T00:30:00.000Z",
+        "user": "孙工",
+        "action": "进场焊接强化支撑板并重打地脚膨胀螺栓"
+      },
+      {
+        "time": "2026-10-28T01:30:00.000Z",
+        "user": "孙工",
+        "action": "复测振动在标准值内，标记已解决"
+      }
+    ]
+  },
+  {
+    "id": "#005",
+    "title": "地面积水",
+    "desc": "副厂房排污渠盖板边缘有含油凝结水积存，未及时导流至沉淀池，存在地面湿滑安全隐患。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "其他",
+    "pos": {
+      "x": -1.442,
+      "y": 0,
+      "z": -2.331
+    },
+    "createdAt": "2026-10-27T06:20:00.000Z",
+    "updatedAt": "2026-10-27T07:10:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "周巡检",
+    "assignee": "环安保障部",
+    "deviceCode": "DRAIN-FLOOR-G04",
+    "severityScore": 48,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T06:20:00.000Z",
+        "user": "周巡检",
+        "action": "安全巡检登记隐患"
+      },
+      {
+        "time": "2026-10-27T07:10:00.000Z",
+        "user": "环安保障部",
+        "action": "已放置黄色防滑警示牌并通知清洁班组"
+      }
+    ]
+  },
+  {
+    "id": "#006",
+    "title": "主循环离心泵轴承润滑油位偏低",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026006，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -12.5,
+      "y": 0,
+      "z": -6.8
+    },
+    "createdAt": "2026-10-20T00:10:00.000Z",
+    "updatedAt": "2026-10-28T02:10:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-006",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T00:10:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#007",
+    "title": "增压水泵进气口阻火阀卡阻",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026007，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -10.77,
+      "y": 0.42,
+      "z": -5.49
+    },
+    "createdAt": "2026-10-21T01:13:00.000Z",
+    "updatedAt": "2026-10-28T03:13:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-007",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T01:13:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#008",
+    "title": "泵体机械密封微量滴漏",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026008，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -9.04,
+      "y": 0.84,
+      "z": -4.18
+    },
+    "createdAt": "2026-10-22T02:16:00.000Z",
+    "updatedAt": "2026-10-28T04:16:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-008",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T02:16:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#009",
+    "title": "变频给水机组冷却风道积尘",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026009，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -7.31,
+      "y": 1.26,
+      "z": -2.87
+    },
+    "createdAt": "2026-10-23T03:19:00.000Z",
+    "updatedAt": "2026-10-28T05:19:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-009",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-23T03:19:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#010",
+    "title": "深水井潜水泵出口压力表指针抖动",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026010，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -5.58,
+      "y": 1.68,
+      "z": -1.56
+    },
+    "createdAt": "2026-10-24T04:22:00.000Z",
+    "updatedAt": "2026-10-28T02:22:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-010",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-24T04:22:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#011",
+    "title": "备用泵自启联锁回路校验异常",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026011，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -3.85,
+      "y": 2.1,
+      "z": -0.25
+    },
+    "createdAt": "2026-10-25T05:25:00.000Z",
+    "updatedAt": "2026-10-28T03:25:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-011",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-25T05:25:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#012",
+    "title": "隔振垫橡胶硬化龟裂",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026012，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -2.12,
+      "y": 2.52,
+      "z": 1.06
+    },
+    "createdAt": "2026-10-26T06:28:00.000Z",
+    "updatedAt": "2026-10-28T04:28:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-012",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-26T06:28:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#013",
+    "title": "电动球阀限位传感器信号漂移",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026013，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": -0.39,
+      "y": 2.94,
+      "z": 2.37
+    },
+    "createdAt": "2026-10-27T07:31:00.000Z",
+    "updatedAt": "2026-10-28T05:31:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-013",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T07:31:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#014",
+    "title": "吸水池液位计超声波探头盲区受干扰",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026014，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": 1.34,
+      "y": 0.16,
+      "z": 3.68
+    },
+    "createdAt": "2026-10-20T08:34:00.000Z",
+    "updatedAt": "2026-10-28T02:34:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-014",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T08:34:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#015",
+    "title": "污水提升泵叶轮缠绕异物告警",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026015，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": 3.07,
+      "y": 0.58,
+      "z": 4.99
+    },
+    "createdAt": "2026-10-21T09:37:00.000Z",
+    "updatedAt": "2026-10-28T03:37:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-015",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T09:37:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#016",
+    "title": "回流泄压阀开启压力偏离整定值",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026016，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": 4.8,
+      "y": 1,
+      "z": 6.3
+    },
+    "createdAt": "2026-10-22T00:40:00.000Z",
+    "updatedAt": "2026-10-28T04:40:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-016",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T00:40:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#017",
+    "title": "稳压气压罐隔膜疲劳预警",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026017，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": 6.53,
+      "y": 1.42,
+      "z": 7.61
+    },
+    "createdAt": "2026-10-23T01:43:00.000Z",
+    "updatedAt": "2026-10-28T05:43:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-017",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-23T01:43:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#018",
+    "title": "机泵接地扁钢螺栓锈蚀",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026018，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "泵房区",
+    "pos": {
+      "x": 8.26,
+      "y": 1.84,
+      "z": 8.92
+    },
+    "createdAt": "2026-10-24T02:46:00.000Z",
+    "updatedAt": "2026-10-28T02:46:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "待指派",
+    "deviceCode": "DEV-泵房-018",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-24T02:46:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#019",
+    "title": "变压器室内温湿度超出设定上限",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026019，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 9.99,
+      "y": 2.26,
+      "z": 10.23
+    },
+    "createdAt": "2026-10-25T03:49:00.000Z",
+    "updatedAt": "2026-10-28T03:49:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-019",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-25T03:49:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#020",
+    "title": "直流屏蓄电池内阻升高告警",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026020，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 11.72,
+      "y": 2.68,
+      "z": 11.54
+    },
+    "createdAt": "2026-10-26T04:52:00.000Z",
+    "updatedAt": "2026-10-28T04:52:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-020",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-26T04:52:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#021",
+    "title": "母线槽伸缩节红外发热点达 62℃",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026021，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 13.45,
+      "y": 3.1,
+      "z": 12.85
+    },
+    "createdAt": "2026-10-27T05:55:00.000Z",
+    "updatedAt": "2026-10-28T05:55:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-021",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T05:55:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#022",
+    "title": "配电室防小动物挡板密封条松脱",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026022，需巡检工程师现场核查确认。",
+    "priority": "HIGH",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 15.18,
+      "y": 0.32,
+      "z": 14.16
+    },
+    "createdAt": "2026-10-20T06:58:00.000Z",
+    "updatedAt": "2026-10-28T02:58:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-022",
+    "severityScore": 85,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T06:58:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#023",
+    "title": "UPS 不间断电源逆变器旁路指示灯闪烁",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026023，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 16.91,
+      "y": 0.74,
+      "z": 0.47
+    },
+    "createdAt": "2026-10-21T07:12:00.000Z",
+    "updatedAt": "2026-10-28T03:12:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-023",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T07:12:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#024",
+    "title": "进线隔离开关辅助触点接触不良",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026024，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 18.64,
+      "y": 1.16,
+      "z": 1.78
+    },
+    "createdAt": "2026-10-22T08:15:00.000Z",
+    "updatedAt": "2026-10-28T04:15:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-024",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T08:15:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#025",
+    "title": "电缆夹层烟感探测器巡检自检超期",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026025，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 20.37,
+      "y": 1.58,
+      "z": 3.09
+    },
+    "createdAt": "2026-10-23T09:18:00.000Z",
+    "updatedAt": "2026-10-28T05:18:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-025",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-23T09:18:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#026",
+    "title": "接地网接地电阻测试点标记模糊",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026026，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 22.1,
+      "y": 2,
+      "z": 4.4
+    },
+    "createdAt": "2026-10-24T00:21:00.000Z",
+    "updatedAt": "2026-10-28T02:21:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-026",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-24T00:21:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#027",
+    "title": "干式变压器温控箱风机常转不休",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026027，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 23.83,
+      "y": 2.42,
+      "z": 5.71
+    },
+    "createdAt": "2026-10-25T01:24:00.000Z",
+    "updatedAt": "2026-10-28T03:24:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-027",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-25T01:24:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#028",
+    "title": "避雷器放电计数器读数突增",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026028，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 1.56,
+      "y": 2.84,
+      "z": 7.02
+    },
+    "createdAt": "2026-10-26T02:27:00.000Z",
+    "updatedAt": "2026-10-28T04:27:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-028",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-26T02:27:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#029",
+    "title": "抽屉式出线柜二次插件对插松脱",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026029，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 3.29,
+      "y": 0.06,
+      "z": 8.33
+    },
+    "createdAt": "2026-10-27T03:30:00.000Z",
+    "updatedAt": "2026-10-28T05:30:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-029",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T03:30:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#030",
+    "title": "低压电容补偿柜接触器触头氧化",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026030，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "OPEN",
+    "scene": "配电室",
+    "pos": {
+      "x": 5.02,
+      "y": 0.48,
+      "z": 9.64
+    },
+    "createdAt": "2026-10-20T04:33:00.000Z",
+    "updatedAt": "2026-10-28T02:33:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "待指派",
+    "deviceCode": "DEV-配电-030",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T04:33:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#031",
+    "title": "排污管盲板螺栓紧固力矩衰减",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026031，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 6.75,
+      "y": 0.9,
+      "z": 10.95
+    },
+    "createdAt": "2026-10-21T05:36:00.000Z",
+    "updatedAt": "2026-10-28T03:36:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-031",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T05:36:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#032",
+    "title": "蒸汽减压阀前后压力比异常",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026032，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 8.48,
+      "y": 1.32,
+      "z": 12.26
+    },
+    "createdAt": "2026-10-22T06:39:00.000Z",
+    "updatedAt": "2026-10-28T04:39:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-032",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T06:39:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#033",
+    "title": "压缩空气主管路接头漏气产生嘶声",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026033，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 10.21,
+      "y": 1.74,
+      "z": 13.57
+    },
+    "createdAt": "2026-10-23T07:42:00.000Z",
+    "updatedAt": "2026-10-28T05:42:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-033",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-23T07:42:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#034",
+    "title": "冷凝水回水管保温层局部破损",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026034，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 11.94,
+      "y": 2.16,
+      "z": 14.88
+    },
+    "createdAt": "2026-10-24T08:45:00.000Z",
+    "updatedAt": "2026-10-28T02:45:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-034",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-24T08:45:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#035",
+    "title": "工艺酸洗管线视镜玻璃起雾",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026035，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 13.67,
+      "y": 2.58,
+      "z": 1.19
+    },
+    "createdAt": "2026-10-25T09:48:00.000Z",
+    "updatedAt": "2026-10-28T03:48:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-035",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-25T09:48:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#036",
+    "title": "重力排水管立管检查口封闭不严",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026036，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 15.4,
+      "y": 3,
+      "z": 2.5
+    },
+    "createdAt": "2026-10-26T00:51:00.000Z",
+    "updatedAt": "2026-10-28T04:51:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-036",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-26T00:51:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#037",
+    "title": "氮气供气阀组压力调节阀膜片老化",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026037，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 17.13,
+      "y": 0.22,
+      "z": 3.81
+    },
+    "createdAt": "2026-10-27T01:54:00.000Z",
+    "updatedAt": "2026-10-28T05:54:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-037",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T01:54:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#038",
+    "title": "消防喷淋支管末端试水压力不足",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026038，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 18.86,
+      "y": 0.64,
+      "z": 5.12
+    },
+    "createdAt": "2026-10-20T02:57:00.000Z",
+    "updatedAt": "2026-10-28T02:57:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-038",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T02:57:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#039",
+    "title": "跨跨管道伸缩器位移量接近极值",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026039，需巡检工程师现场核查确认。",
+    "priority": "MEDIUM",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 20.59,
+      "y": 1.06,
+      "z": 6.43
+    },
+    "createdAt": "2026-10-21T03:11:00.000Z",
+    "updatedAt": "2026-10-28T03:11:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-039",
+    "severityScore": 60,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T03:11:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#040",
+    "title": "燃气泄漏探测报警仪传感器零点漂移",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026040，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 22.32,
+      "y": 1.48,
+      "z": 7.74
+    },
+    "createdAt": "2026-10-22T04:14:00.000Z",
+    "updatedAt": "2026-10-28T04:14:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-040",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T04:14:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#041",
+    "title": "循环冷却水管外壁防腐涂层脱落",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026041，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 0.05,
+      "y": 1.9,
+      "z": 9.05
+    },
+    "createdAt": "2026-10-23T05:17:00.000Z",
+    "updatedAt": "2026-10-28T05:17:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-041",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-23T05:17:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#042",
+    "title": "管网水锤消除器气囊充气压力不足",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026042，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 1.78,
+      "y": 2.32,
+      "z": 10.36
+    },
+    "createdAt": "2026-10-24T06:20:00.000Z",
+    "updatedAt": "2026-10-28T02:20:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-042",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-24T06:20:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#043",
+    "title": "法兰跨接防静电铜编织带断裂",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026043，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "IN_PROGRESS",
+    "scene": "管道区",
+    "pos": {
+      "x": 3.51,
+      "y": 2.74,
+      "z": 11.67
+    },
+    "createdAt": "2026-10-25T07:23:00.000Z",
+    "updatedAt": "2026-10-28T03:23:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "处理小组A",
+    "deviceCode": "DEV-管道-043",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-25T07:23:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#044",
+    "title": "防爆配电箱箱门防爆结合面油漆脱落",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026044，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 5.24,
+      "y": 3.16,
+      "z": 12.98
+    },
+    "createdAt": "2026-10-26T08:26:00.000Z",
+    "updatedAt": "2026-10-28T04:26:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "维保技师 #1",
+    "deviceCode": "DEV-其他-044",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-26T08:26:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#045",
+    "title": "厂区外围周界红外对射报警误报",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026045，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 6.97,
+      "y": 0.38,
+      "z": 14.29
+    },
+    "createdAt": "2026-10-27T09:29:00.000Z",
+    "updatedAt": "2026-10-28T05:29:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "维保技师 #2",
+    "deviceCode": "DEV-其他-045",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T09:29:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#046",
+    "title": "中央控制室大屏拼接缝亮度不均",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026046，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 8.7,
+      "y": 0.8,
+      "z": 0.6
+    },
+    "createdAt": "2026-10-20T00:32:00.000Z",
+    "updatedAt": "2026-10-28T02:32:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "维保技师 #3",
+    "deviceCode": "DEV-其他-046",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T00:32:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#047",
+    "title": "巡检机器人充电桩电极触片氧化",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026047，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 10.43,
+      "y": 1.22,
+      "z": 1.91
+    },
+    "createdAt": "2026-10-21T01:35:00.000Z",
+    "updatedAt": "2026-10-28T03:35:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "维保技师 #4",
+    "deviceCode": "DEV-其他-047",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T01:35:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#048",
+    "title": "安全通道逃生门电磁锁失电吸合延迟",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026048，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 12.16,
+      "y": 1.64,
+      "z": 3.22
+    },
+    "createdAt": "2026-10-22T02:38:00.000Z",
+    "updatedAt": "2026-10-28T04:38:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "维保技师 #1",
+    "deviceCode": "DEV-其他-048",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T02:38:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#049",
+    "title": "高空管廊巡检走道防滑格栅变形",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026049，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 13.89,
+      "y": 2.06,
+      "z": 4.53
+    },
+    "createdAt": "2026-10-23T03:41:00.000Z",
+    "updatedAt": "2026-10-28T05:41:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "维保技师 #2",
+    "deviceCode": "DEV-其他-049",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-23T03:41:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#050",
+    "title": "危废暂存间负压风机排风量减小",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026050，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 15.62,
+      "y": 2.48,
+      "z": 5.84
+    },
+    "createdAt": "2026-10-24T04:44:00.000Z",
+    "updatedAt": "2026-10-28T02:44:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "维保技师 #3",
+    "deviceCode": "DEV-其他-050",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-24T04:44:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#051",
+    "title": "室外消火栓扳手丢失及闷盖锈死",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026051，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 17.35,
+      "y": 2.9,
+      "z": 7.15
+    },
+    "createdAt": "2026-10-25T05:47:00.000Z",
+    "updatedAt": "2026-10-28T03:47:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "维保技师 #4",
+    "deviceCode": "DEV-其他-051",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-25T05:47:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#052",
+    "title": "工业交换机 24 口光纤跳线弯折过大",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026052，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 19.08,
+      "y": 0.12,
+      "z": 8.46
+    },
+    "createdAt": "2026-10-26T06:50:00.000Z",
+    "updatedAt": "2026-10-28T04:50:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #3",
+    "assignee": "维保技师 #1",
+    "deviceCode": "DEV-其他-052",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-26T06:50:00.000Z",
+        "user": "巡检员 #3",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#053",
+    "title": "洗眼器紧急冲淋水压低于标准值",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026053，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 20.81,
+      "y": 0.54,
+      "z": 9.77
+    },
+    "createdAt": "2026-10-27T07:53:00.000Z",
+    "updatedAt": "2026-10-28T05:53:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #4",
+    "assignee": "维保技师 #2",
+    "deviceCode": "DEV-其他-053",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-27T07:53:00.000Z",
+        "user": "巡检员 #4",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#054",
+    "title": "巡检路线 RFID 电子标签脱落",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026054，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 22.54,
+      "y": 0.96,
+      "z": 11.08
+    },
+    "createdAt": "2026-10-20T08:56:00.000Z",
+    "updatedAt": "2026-10-28T02:56:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #5",
+    "assignee": "维保技师 #3",
+    "deviceCode": "DEV-其他-054",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-20T08:56:00.000Z",
+        "user": "巡检员 #5",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#055",
+    "title": "车间屋面防雷避雷带支架脱焊",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026055，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 0.27,
+      "y": 1.38,
+      "z": 12.39
+    },
+    "createdAt": "2026-10-21T09:10:00.000Z",
+    "updatedAt": "2026-10-28T03:10:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #1",
+    "assignee": "维保技师 #4",
+    "deviceCode": "DEV-其他-055",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-21T09:10:00.000Z",
+        "user": "巡检员 #1",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  },
+  {
+    "id": "#056",
+    "title": "雨水收集沉砂池浮渣堆积过厚",
+    "desc": "数字孪生空间定位巡检发现此项设备工况偏差，编号序列号：UNITY-PT-2026056，需巡检工程师现场核查确认。",
+    "priority": "LOW",
+    "status": "RESOLVED",
+    "scene": "其他",
+    "pos": {
+      "x": 2,
+      "y": 1.8,
+      "z": 13.7
+    },
+    "createdAt": "2026-10-22T00:13:00.000Z",
+    "updatedAt": "2026-10-28T04:13:00.000Z",
+    "screenshot": "/assets/unity-inspect-evidence.png",
+    "reporter": "巡检员 #2",
+    "assignee": "维保技师 #1",
+    "deviceCode": "DEV-其他-056",
+    "severityScore": 35,
+    "auditLogs": [
+      {
+        "time": "2026-10-22T00:13:00.000Z",
+        "user": "巡检员 #2",
+        "action": "巡检上报隐患条目"
+      }
+    ]
+  }
+]

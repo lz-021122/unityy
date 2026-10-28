@@ -33,6 +33,8 @@ pnpm-debug.log*
 /server/*.out
 /server/*.prof
 /server/coverage.*
+/server/data/issues.json
+/server/data/.issues-*.tmp
 
 # Local environment and secret files
 .env
