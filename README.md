@@ -4,7 +4,7 @@
 
 Unity Inspect 用于构建 Unity 场景巡检、问题管理和结果展示的一体化系统。
 
-当前前端已导入 AI Studio 导出的完整管理端界面，并接入 Go 标准库 REST API 与本地 JSON 持久化。Unity 业务与实时桥接仍未开始。
+当前前端已导入 AI Studio 导出的完整管理端界面，并接入 Go 标准库 REST API 与本地 JSON 持久化。Unity 端已实现问题坐标 3D 标记与基础信息面板；WebSocket 和实时传感器仍未接入。
 
 ## 当前目录结构
 
@@ -68,14 +68,15 @@ lucide-react : 0.546.0
 - Go API 已实现问题查询、创建、更新、状态操作、删除和 CSV 导出。
 - Go 使用本地 JSON 持久化，运行时数据位于 `server/data/issues.json`。
 - React 问题管理、统计、场景和 CSV 已接入 Go API。
+- Unity Play Mode 已通过 `UnityWebRequest` 读取真实 API 数据并生成三维问题标记。
 - 项目级 `.gitignore` 和基础文档已建立。
 - 本地 Git 仓库使用 `main` 分支。
 
 ## 尚未实现
 
 - Unity 巡检脚本
-- Unity 与 Web、Go 服务之间的业务数据交互
 - Unity WebSocket 实时桥接
+- Unity 传感器数据和复杂数字孪生
 - 前端演示数据的服务端持久化
 - 数据库、身份认证、部署和远程仓库配置
 
@@ -106,3 +107,13 @@ go run .
 
 联调时需要同时运行 Go API 与前端开发服务。前端默认请求
 `http://127.0.0.1:8080/api`，可通过 `VITE_API_BASE_URL` 覆盖。
+
+Unity 联调：
+
+1. 保持 Go API 在 `127.0.0.1:8080` 运行。
+2. 使用 Unity 打开 `unity-smoke-test`。
+3. 进入 `Assets/Scenes/SampleScene.unity` 的 Play Mode。
+4. 运行时会自动加载 100 条以内的第一页问题，并按优先级生成三维标记。
+5. 可使用左侧面板刷新数据、选择问题并查看坐标与状态。
+
+该集成只读取问题列表，不包含 WebSocket、实时传感器、截图上传或复杂数字孪生功能。
