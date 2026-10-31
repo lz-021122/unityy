@@ -17,6 +17,7 @@
 /unity-smoke-test/UserSettings/
 /unity-smoke-test/Build/
 /unity-smoke-test/Builds/
+/unity-smoke-test/ProjectSettings/SceneTemplateSettings.json
 
 # Node.js generated content
 /web/node_modules/
@@ -41,6 +42,17 @@ pnpm-debug.log*
 .env.*
 !.env.example
 *.local
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.jks
+*.keystore
+id_rsa
+id_ed25519
 
 # Common IDE files
 /.vs/
