@@ -58,6 +58,11 @@ namespace UnityInspect.Editor
                 return;
             }
 
+            if (!File.Exists(ActivePath))
+            {
+                return;
+            }
+
             if (startedAt < 0d)
             {
                 startedAt = EditorApplication.timeSinceStartup;
@@ -89,6 +94,15 @@ namespace UnityInspect.Editor
         private static void StartRequestedSmokeTest()
         {
             Directory.CreateDirectory(TempDirectory);
+            var mode = "basic";
+            if (File.Exists(RequestPath))
+            {
+                var requestedMode = File.ReadAllText(RequestPath).Trim();
+                if (!string.IsNullOrWhiteSpace(requestedMode))
+                {
+                    mode = requestedMode;
+                }
+            }
             if (File.Exists(ResultPath))
             {
                 File.Delete(ResultPath);
@@ -101,7 +115,7 @@ namespace UnityInspect.Editor
             {
                 File.Delete(RequestPath);
             }
-            File.WriteAllText(ActivePath, DateTime.UtcNow.ToString("O"));
+            File.WriteAllText(ActivePath, mode);
             startedAt = EditorApplication.timeSinceStartup;
             exitRequested = false;
             EditorApplication.isPlaying = true;
