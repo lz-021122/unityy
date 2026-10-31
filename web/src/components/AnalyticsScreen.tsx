@@ -106,7 +106,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ issues, onExpo
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
           <div className="text-xs text-slate-500">数字孪生点位覆盖率</div>
           <div className="text-2xl font-bold text-slate-800 mt-1">99.4%</div>
-          <div className="text-[11px] text-blue-600 font-medium mt-1">56/56 点位空间校准</div>
+          <div className="text-[11px] text-blue-600 font-medium mt-1">
+            演示指标 · 空间校准数量以实际场景为准
+          </div>
         </div>
       </div>
 

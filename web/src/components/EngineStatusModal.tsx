@@ -4,9 +4,16 @@ import { X, Activity, Cpu, Wifi, CheckCircle2, RefreshCw, Zap, Server } from 'lu
 interface EngineStatusModalProps {
   isOpen: boolean;
   onClose: () => void;
+  issueCount: number;
+  issuesAvailable: boolean;
 }
 
-export const EngineStatusModal: React.FC<EngineStatusModalProps> = ({ isOpen, onClose }) => {
+export const EngineStatusModal: React.FC<EngineStatusModalProps> = ({
+  isOpen,
+  onClose,
+  issueCount,
+  issuesAvailable,
+}) => {
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [lastPing, setLastPing] = useState(28);
 
@@ -111,7 +118,9 @@ export const EngineStatusModal: React.FC<EngineStatusModalProps> = ({ isOpen, on
               </div>
               <div className="flex justify-between py-1 border-b border-slate-100 text-slate-600">
                 <span>/unity/issues/coordinate_pins</span>
-                <span className="text-slate-500 font-semibold">56 个演示锚点</span>
+                <span className="text-slate-500 font-semibold">
+                  {issuesAvailable ? `${issueCount} 个 API 问题锚点` : '问题数据不可用'}
+                </span>
               </div>
               <div className="flex justify-between py-1 text-slate-600">
                 <span>/unity/sensors/temperature_vibration</span>

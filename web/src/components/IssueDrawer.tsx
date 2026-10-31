@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { X, Camera, Trash2, Box } from 'lucide-react';
 import type { Issue, Priority, IssueStatus, SceneCategory, WorldPosition } from '../types';
 import { DEFAULT_SCREENSHOT } from '../constants';
 import { apiErrorMessage } from '../api/client';
 import { formatApiDateTime } from '../utils/date';
+import { resolveIdempotencyKey } from '../utils/idempotency';
 
 interface IssueDrawerProps {
   isOpen: boolean;
   mode: 'view' | 'create';
   issue: Issue | null;
   onClose: () => void;
-  onSave: (issueData: Partial<Issue>) => Promise<void>;
+  onSave: (issueData: Partial<Issue>, idempotencyKey?: string) => Promise<void>;
   onDelete?: (id: string) => Promise<boolean>;
   onOpenLightbox: (issue: Issue) => void;
   onLocateInScene: (issue: Issue) => void;
@@ -46,6 +47,8 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [uploadNotice, setUploadNotice] = useState('');
+  const idempotencyKeyRef = useRef('');
+  const idempotencyPayloadRef = useRef('');
 
   if (!isOpen) return null;
 
@@ -57,7 +60,7 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
     }
     setIsSaving(true);
     try {
-      await onSave({
+      const payload: Partial<Issue> = {
         title: title.trim(),
         desc: desc.trim(),
         priority,
@@ -68,7 +71,20 @@ export const IssueDrawer: React.FC<IssueDrawerProps> = ({
         reporter,
         assignee,
         deviceCode,
-      });
+      };
+      let idempotencyKey: string | undefined;
+      if (mode === 'create') {
+        const payloadSignature = JSON.stringify(payload);
+        const selection = resolveIdempotencyKey(
+          idempotencyKeyRef.current,
+          idempotencyPayloadRef.current,
+          payloadSignature,
+        );
+        idempotencyKeyRef.current = selection.key;
+        idempotencyPayloadRef.current = selection.payload;
+        idempotencyKey = selection.key;
+      }
+      await onSave(payload, idempotencyKey);
     } catch (error) {
       setSubmitError(`保存失败：${apiErrorMessage(error)}`);
     } finally {

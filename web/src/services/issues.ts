@@ -5,6 +5,7 @@ import {
 import type {
   CreateIssueInput,
   Issue,
+  IssueAggregates,
   IssueListResponse,
   IssueQuery,
   IssueStatus,
@@ -12,6 +13,12 @@ import type {
 } from '../types'
 
 const issuePath = (id: string) => `/issues/${encodeURIComponent(id)}`
+
+export interface IssueSnapshot {
+  issues: Issue[]
+  total: number
+  aggregates: IssueAggregates
+}
 
 export function queryString(params: IssueQuery): string {
   const query = new URLSearchParams()
@@ -36,29 +43,47 @@ export function listIssues(
   })
 }
 
-export async function fetchAllIssues(signal?: AbortSignal): Promise<Issue[]> {
+export async function fetchIssueSnapshot(
+  signal?: AbortSignal,
+): Promise<IssueSnapshot> {
   const pageSize = 100
   let page = 1
   const issues: Issue[] = []
+  let total = 0
+  let aggregates: IssueAggregates | null = null
   while (true) {
     const result = await listIssues({ page, pageSize }, signal)
+    if (aggregates === null) {
+      total = result.total
+      aggregates = result.aggregates
+    }
     issues.push(...result.items)
     if (issues.length >= result.total || result.items.length === 0) {
       break
     }
     page += 1
   }
-  return issues
+  if (aggregates === null) {
+    throw new Error('问题列表响应缺少聚合数据')
+  }
+  return { issues, total, aggregates }
 }
 
 export function getIssue(id: string, signal?: AbortSignal): Promise<Issue> {
   return requestJSON<Issue>(issuePath(id), { signal })
 }
 
-export function createIssue(input: CreateIssueInput): Promise<Issue> {
+export function createIssue(
+  input: CreateIssueInput,
+  idempotencyKey?: string,
+): Promise<Issue> {
+  const headers = idempotencyKey
+    ? { 'Idempotency-Key': idempotencyKey }
+    : undefined
   return requestJSON<Issue>('/issues', {
     method: 'POST',
     body: JSON.stringify(input),
+    headers,
   })
 }
 

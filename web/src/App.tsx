@@ -19,7 +19,7 @@ import {
   createIssue,
   deleteIssue,
   exportIssuesCSV,
-  fetchAllIssues,
+  fetchIssueSnapshot,
   getIssue,
   updateIssue,
   updateIssueStatus,
@@ -35,6 +35,11 @@ import { IssueDrawer } from './components/IssueDrawer';
 import { ImageLightboxModal } from './components/ImageLightboxModal';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { EngineStatusModal } from './components/EngineStatusModal';
+import { isExactIssueMatch } from './utils/search';
+import {
+  selectGlobalIssueMetrics,
+  type IssueMetrics,
+} from './utils/issueMetrics';
 import {
   BarChart2,
   Box,
@@ -47,6 +52,8 @@ import {
 
 export default function App() {
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [globalIssueMetrics, setGlobalIssueMetrics] =
+    useState<IssueMetrics | null>(null);
   const [allIssuesError, setAllIssuesError] = useState('');
   const [dataVersion, setDataVersion] = useState(0);
   const [currentTab, setCurrentTab] = useState<NavTab>('issues');
@@ -89,13 +96,15 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetchAllIssues(controller.signal)
-      .then((data) => {
-        setIssues(data);
+    void fetchIssueSnapshot(controller.signal)
+      .then((snapshot) => {
+        setIssues(snapshot.issues);
+        setGlobalIssueMetrics(selectGlobalIssueMetrics(snapshot));
         setAllIssuesError('');
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
+        setGlobalIssueMetrics(null);
         setAllIssuesError(apiErrorMessage(error));
       });
     return () => controller.abort();
@@ -143,7 +152,28 @@ export default function App() {
     }
   };
 
-  const handleSaveIssue = async (data: Partial<Issue>): Promise<void> => {
+  const handleGlobalSearchChange = (query: string) => {
+    setSearchQuery(query);
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) {
+      return;
+    }
+
+    const exactIssue = issues.find((issue) =>
+      isExactIssueMatch(issue, normalized),
+    );
+    if (currentTab !== 'issues') {
+      setCurrentTab('issues');
+      if (exactIssue) {
+        void handleOpenViewDrawer(exactIssue);
+      }
+    }
+  };
+
+  const handleSaveIssue = async (
+    data: Partial<Issue>,
+    idempotencyKey?: string,
+  ): Promise<void> => {
     try {
       if (drawerMode === 'create') {
         const input: CreateIssueInput = {
@@ -159,7 +189,7 @@ export default function App() {
           deviceCode: data.deviceCode,
           severityScore: data.severityScore,
         };
-        const created = await createIssue(input);
+        const created = await createIssue(input, idempotencyKey);
         showToast(`已创建问题：${created.id}`);
       } else if (activeIssue) {
         const input: UpdateIssueInput = {
@@ -275,7 +305,7 @@ export default function App() {
       {/* Main Top Header */}
       <Header
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleGlobalSearchChange}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenEngineStatus={() => setIsEngineStatusOpen(true)}
       />
@@ -317,6 +347,7 @@ export default function App() {
             searchQuery={searchQuery}
             onResetSearch={() => setSearchQuery('')}
             onExportData={handleExportData}
+            globalIssueMetrics={globalIssueMetrics}
           />
         )}
 
@@ -402,6 +433,8 @@ export default function App() {
       <EngineStatusModal
         isOpen={isEngineStatusOpen}
         onClose={() => setIsEngineStatusOpen(false)}
+        issueCount={issues.length}
+        issuesAvailable={!allIssuesError}
       />
 
       {/* Toast Notification Notification Banner */}

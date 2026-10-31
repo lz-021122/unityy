@@ -10,6 +10,7 @@ import type {
 import { apiErrorMessage } from '../api/client';
 import { listIssues } from '../services/issues';
 import { formatApiDateTime } from '../utils/date';
+import type { IssueMetrics } from '../utils/issueMetrics';
 import {
   Plus,
   RotateCcw,
@@ -37,6 +38,7 @@ interface IssueManagementScreenProps {
   searchQuery: string;
   onResetSearch: () => void;
   onExportData: (params: IssueQuery) => Promise<boolean>;
+  globalIssueMetrics: IssueMetrics | null;
 }
 
 const EMPTY_AGGREGATES: IssueAggregates = {
@@ -63,6 +65,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
   searchQuery,
   onResetSearch,
   onExportData,
+  globalIssueMetrics,
 }) => {
   // Filter States
   const [filterPriority, setFilterPriority] = useState<'ALL' | Priority>('ALL');
@@ -99,6 +102,8 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+  const displayGlobalMetric = (value: number) =>
+    globalIssueMetrics ? value : '—';
 
   const stats = {
     total: aggregates.total,
@@ -440,7 +445,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <div className="text-xs text-slate-500 font-medium">问题总数</div>
-            <div className="text-2xl font-bold text-slate-800 mt-1">{stats.total}</div>
+            <div className="text-2xl font-bold text-slate-800 mt-1">{displayGlobalMetric(globalIssueMetrics?.total ?? 0)}</div>
             <div className="flex items-center text-[11px] text-blue-600 font-medium mt-1">
               <span>↑ +12%</span>
               <span className="text-slate-400 ml-1.5 font-normal">模拟趋势</span>
@@ -455,7 +460,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <div className="text-xs text-slate-500 font-medium">高优先级</div>
-            <div className="text-2xl font-bold text-slate-800 mt-1">{stats.high}</div>
+            <div className="text-2xl font-bold text-slate-800 mt-1">{displayGlobalMetric(globalIssueMetrics?.high ?? 0)}</div>
             <div className="flex items-center text-[11px] text-rose-600 font-medium mt-1">
               <span>↑ +20%</span>
               <span className="text-slate-400 ml-1.5 font-normal">模拟趋势</span>
@@ -470,7 +475,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <div className="text-xs text-slate-500 font-medium">处理中</div>
-            <div className="text-2xl font-bold text-slate-800 mt-1">{stats.inProgress}</div>
+            <div className="text-2xl font-bold text-slate-800 mt-1">{displayGlobalMetric(globalIssueMetrics?.inProgress ?? 0)}</div>
             <div className="flex items-center text-[11px] text-amber-600 font-medium mt-1">
               <span>↑ +9%</span>
               <span className="text-slate-400 ml-1.5 font-normal">模拟趋势</span>
@@ -485,7 +490,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div>
             <div className="text-xs text-slate-500 font-medium">已解决</div>
-            <div className="text-2xl font-bold text-slate-800 mt-1">{stats.resolved}</div>
+            <div className="text-2xl font-bold text-slate-800 mt-1">{displayGlobalMetric(globalIssueMetrics?.resolved ?? 0)}</div>
             <div className="flex items-center text-[11px] text-emerald-600 font-medium mt-1">
               <span>↑ +22%</span>
               <span className="text-slate-400 ml-1.5 font-normal">模拟趋势</span>
@@ -538,7 +543,13 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-slate-400">
                     <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                    <span>暂无符合条件的问题记录</span>
+                    <span>
+                      {loadError
+                        ? '问题数据不可用'
+                        : searchQuery.trim()
+                        ? `未找到与“${searchQuery.trim()}”匹配的问题`
+                        : '暂无符合条件的问题记录'}
+                    </span>
                   </td>
                 </tr>
               ) : (
@@ -665,7 +676,7 @@ export const IssueManagementScreen: React.FC<IssueManagementScreenProps> = ({
 
         {/* Table Pagination Footer matching screen.png */}
         <div className="px-5 py-3.5 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
-          <div>共 {totalRecords} 条记录</div>
+          <div>{loadError ? '数据不可用' : `共 ${totalRecords} 条记录`}</div>
           <div className="flex items-center gap-1 select-none">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
