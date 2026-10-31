@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +17,9 @@ import (
 )
 
 var ErrNotFound = errors.New("issue not found")
+var ErrIdempotencyConflict = errors.New("idempotency key conflict")
+
+const IdempotencyTTL = 24 * time.Hour
 
 type Filter struct {
 	Query       string
@@ -46,17 +51,25 @@ type ListResult struct {
 }
 
 type Store struct {
-	mu       sync.RWMutex
-	issues   []Issue
-	nextID   int
-	dataPath string
-	now      func() time.Time
+	mu          sync.RWMutex
+	issues      []Issue
+	nextID      int
+	idempotency map[string]idempotencyRecord
+	dataPath    string
+	now         func() time.Time
 }
 
 type persistedState struct {
-	Version int     `json:"version"`
-	NextID  int     `json:"nextId"`
-	Issues  []Issue `json:"issues"`
+	Version     int                          `json:"version"`
+	NextID      int                          `json:"nextId"`
+	Issues      []Issue                      `json:"issues"`
+	Idempotency map[string]idempotencyRecord `json:"idempotency,omitempty"`
+}
+
+type idempotencyRecord struct {
+	RequestHash string    `json:"requestHash"`
+	CreatedAt   time.Time `json:"createdAt"`
+	Response    Issue     `json:"response"`
 }
 
 func NewStore(seedPath, dataPath string) (*Store, error) {
@@ -74,7 +87,7 @@ func NewStore(seedPath, dataPath string) (*Store, error) {
 		}
 	}
 
-	issues, nextID, _, err := decodeIssueData(data)
+	issues, nextID, idempotency, _, err := decodeIssueData(data)
 	if err != nil {
 		return nil, fmt.Errorf("decode issue data: %w", err)
 	}
@@ -91,9 +104,19 @@ func NewStore(seedPath, dataPath string) (*Store, error) {
 	if nextID < 1 {
 		nextID = 1
 	}
-	store := &Store{issues: issues, nextID: nextID, dataPath: dataPath, now: now}
+	if idempotency == nil {
+		idempotency = map[string]idempotencyRecord{}
+	}
+	store := &Store{
+		issues:      issues,
+		nextID:      nextID,
+		idempotency: idempotency,
+		dataPath:    dataPath,
+		now:         now,
+	}
+	store.pruneExpiredIdempotencyLocked(store.now())
 	if fromSeed {
-		if err := store.persistAtomic(issues, nextID); err != nil {
+		if err := store.persistAtomic(issues, nextID, idempotency); err != nil {
 			return nil, fmt.Errorf("initialize runtime data: %w", err)
 		}
 	}
@@ -158,14 +181,37 @@ func (s *Store) Get(id string) (Issue, error) {
 }
 
 func (s *Store) Create(req CreateIssueRequest, actor string) (Issue, error) {
+	issue, _, err := s.CreateIdempotent(req, actor, "")
+	return issue, err
+}
+
+func (s *Store) CreateIdempotent(
+	req CreateIssueRequest,
+	actor string,
+	key string,
+) (Issue, bool, error) {
 	normalized, err := normalizeCreateRequest(req)
 	if err != nil {
-		return Issue{}, err
+		return Issue{}, false, err
+	}
+	requestHash, err := hashCreateRequest(normalized, actor)
+	if err != nil {
+		return Issue{}, false, err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := s.now().UTC()
+	s.pruneExpiredIdempotencyLocked(now)
+	if key != "" {
+		if record, exists := s.idempotency[key]; exists {
+			if record.RequestHash != requestHash {
+				return Issue{}, false, ErrIdempotencyConflict
+			}
+			return cloneIssue(record.Response), true, nil
+		}
+	}
+
 	issue := Issue{
 		ID:            fmt.Sprintf("#%03d", s.nextID),
 		Title:         normalized.Title,
@@ -191,12 +237,21 @@ func (s *Store) Create(req CreateIssueRequest, actor string) (Issue, error) {
 	candidate = append(candidate, issue)
 	candidate = append(candidate, s.issues...)
 	nextID := s.nextID + 1
-	if err := s.persistAtomic(candidate, nextID); err != nil {
-		return Issue{}, err
+	idempotency := cloneIdempotency(s.idempotency)
+	if key != "" {
+		idempotency[key] = idempotencyRecord{
+			RequestHash: requestHash,
+			CreatedAt:   now,
+			Response:    cloneIssue(issue),
+		}
+	}
+	if err := s.persistAtomic(candidate, nextID, idempotency); err != nil {
+		return Issue{}, false, err
 	}
 	s.issues = candidate
 	s.nextID = nextID
-	return cloneIssue(issue), nil
+	s.idempotency = idempotency
+	return cloneIssue(issue), false, nil
 }
 
 func (s *Store) Update(id string, req UpdateIssueRequest, actor string) (Issue, error) {
@@ -260,7 +315,7 @@ func (s *Store) Update(id string, req UpdateIssueRequest, actor string) (Issue, 
 
 	candidate := cloneIssues(s.issues)
 	candidate[index] = updated
-	if err := s.persistAtomic(candidate, s.nextID); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID, s.idempotency); err != nil {
 		return Issue{}, err
 	}
 	s.issues = candidate
@@ -305,7 +360,7 @@ func (s *Store) BatchUpdateStatus(ids []string, status IssueStatus, actor string
 			Time: now, User: actor, Action: "批量状态变更至 " + string(status),
 		})
 	}
-	if err := s.persistAtomic(candidate, s.nextID); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID, s.idempotency); err != nil {
 		return 0, err
 	}
 	s.issues = candidate
@@ -322,7 +377,7 @@ func (s *Store) Delete(id string) error {
 	candidate := make([]Issue, 0, len(s.issues)-1)
 	candidate = append(candidate, cloneIssues(s.issues[:index])...)
 	candidate = append(candidate, cloneIssues(s.issues[index+1:])...)
-	if err := s.persistAtomic(candidate, s.nextID); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID, s.idempotency); err != nil {
 		return err
 	}
 	s.issues = candidate
@@ -352,7 +407,7 @@ func (s *Store) BatchDelete(ids []string) (int, error) {
 			candidate = append(candidate, cloneIssue(issue))
 		}
 	}
-	if err := s.persistAtomic(candidate, s.nextID); err != nil {
+	if err := s.persistAtomic(candidate, s.nextID, s.idempotency); err != nil {
 		return 0, err
 	}
 	s.issues = candidate
@@ -442,14 +497,19 @@ func (s *Store) requiredIndicesLocked(ids []string) ([]int, error) {
 	return indices, nil
 }
 
-func (s *Store) persistAtomic(issues []Issue, nextID int) error {
+func (s *Store) persistAtomic(
+	issues []Issue,
+	nextID int,
+	idempotency map[string]idempotencyRecord,
+) error {
 	if err := os.MkdirAll(filepath.Dir(s.dataPath), 0o750); err != nil {
 		return fmt.Errorf("create data directory: %w", err)
 	}
 	state := persistedState{
-		Version: 1,
-		NextID:  nextID,
-		Issues:  issues,
+		Version:     1,
+		NextID:      nextID,
+		Issues:      issues,
+		Idempotency: idempotency,
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -485,30 +545,73 @@ func (s *Store) persistAtomic(issues []Issue, nextID int) error {
 	return nil
 }
 
-func decodeIssueData(data []byte) ([]Issue, int, bool, error) {
+func decodeIssueData(
+	data []byte,
+) ([]Issue, int, map[string]idempotencyRecord, bool, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 {
-		return nil, 0, false, errors.New("issue data is empty")
+		return nil, 0, nil, false, errors.New("issue data is empty")
 	}
 	switch trimmed[0] {
 	case '[':
 		var issues []Issue
 		if err := json.Unmarshal(trimmed, &issues); err != nil {
-			return nil, 0, true, err
+			return nil, 0, nil, true, err
 		}
-		return issues, maxNumericID(issues) + 1, true, nil
+		return issues, maxNumericID(issues) + 1, nil, true, nil
 	case '{':
 		var state persistedState
 		if err := json.Unmarshal(trimmed, &state); err != nil {
-			return nil, 0, false, err
+			return nil, 0, nil, false, err
 		}
 		if state.Version != 1 {
-			return nil, 0, false, fmt.Errorf("unsupported issue data version %d", state.Version)
+			return nil, 0, nil, false, fmt.Errorf(
+				"unsupported issue data version %d",
+				state.Version,
+			)
 		}
-		return state.Issues, state.NextID, false, nil
+		return state.Issues, state.NextID, state.Idempotency, false, nil
 	default:
-		return nil, 0, false, errors.New("issue data must be a JSON array or object")
+		return nil, 0, nil, false, errors.New(
+			"issue data must be a JSON array or object",
+		)
 	}
+}
+
+func hashCreateRequest(req CreateIssueRequest, actor string) (string, error) {
+	data, err := json.Marshal(struct {
+		Request CreateIssueRequest `json:"request"`
+		Actor   string             `json:"actor"`
+	}{
+		Request: req,
+		Actor:   actor,
+	})
+	if err != nil {
+		return "", fmt.Errorf("encode idempotent request: %w", err)
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func (s *Store) pruneExpiredIdempotencyLocked(now time.Time) {
+	for key, record := range s.idempotency {
+		if record.RequestHash == "" ||
+			record.Response.ID == "" ||
+			!now.Before(record.CreatedAt.Add(IdempotencyTTL)) {
+			delete(s.idempotency, key)
+		}
+	}
+}
+
+func cloneIdempotency(
+	source map[string]idempotencyRecord,
+) map[string]idempotencyRecord {
+	cloned := make(map[string]idempotencyRecord, len(source))
+	for key, record := range source {
+		record.Response = cloneIssue(record.Response)
+		cloned[key] = record
+	}
+	return cloned
 }
 
 func maxNumericID(issues []Issue) int {

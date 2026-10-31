@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -126,6 +127,171 @@ func TestAPICreateUpdateStatusDeleteAndAudit(t *testing.T) {
 	}
 }
 
+func TestAPICreateIdempotencyAndConflict(t *testing.T) {
+	handler, _ := newTestAPI(t, standardTestIssues()[:1])
+	headers := map[string]string{
+		"X-Actor":         "idempotency-api",
+		"Idempotency-Key": "api-create-20261030-001",
+	}
+	payload := CreateIssueRequest{
+		Title: "幂等 API 问题",
+		Scene: "泵房区",
+		Pos:   &Position{X: 2, Y: 1, Z: 4},
+	}
+
+	first := requestJSON(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/issues",
+		payload,
+		headers,
+	)
+	second := requestJSON(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/issues",
+		payload,
+		headers,
+	)
+	if first.Code != http.StatusCreated || second.Code != http.StatusCreated {
+		t.Fatalf(
+			"idempotent statuses = %d, %d",
+			first.Code,
+			second.Code,
+		)
+	}
+	firstIssue := decodeResponse[Issue](t, first)
+	secondIssue := decodeResponse[Issue](t, second)
+	if firstIssue.ID != secondIssue.ID {
+		t.Fatalf("idempotent IDs differ: %s vs %s", firstIssue.ID, secondIssue.ID)
+	}
+	if second.Header().Get("Idempotency-Replayed") != "true" {
+		t.Fatalf("replayed response header is missing")
+	}
+
+	list := requestJSON(
+		t,
+		handler,
+		http.MethodGet,
+		"/api/issues?page=1&pageSize=100",
+		nil,
+		nil,
+	)
+	result := decodeResponse[ListResult](t, list)
+	if result.Total != 2 {
+		t.Fatalf("idempotent request created %d records, want 2 total", result.Total)
+	}
+
+	payload.Title = "不同内容的幂等问题"
+	conflict := requestJSON(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/issues",
+		payload,
+		headers,
+	)
+	if conflict.Code != http.StatusConflict {
+		t.Fatalf(
+			"idempotency conflict status = %d, body = %s",
+			conflict.Code,
+			conflict.Body.String(),
+		)
+	}
+	envelope := decodeResponse[errorEnvelope](t, conflict)
+	if envelope.Error.Code != "IDEMPOTENCY_CONFLICT" {
+		t.Fatalf("unexpected idempotency conflict: %+v", envelope.Error)
+	}
+}
+
+func TestAPIRejectsInvalidIdempotencyKey(t *testing.T) {
+	handler, _ := newTestAPI(t, standardTestIssues()[:1])
+	response := requestJSON(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/issues",
+		CreateIssueRequest{
+			Title: "非法幂等键",
+			Scene: "其他",
+			Pos:   &Position{},
+		},
+		map[string]string{"Idempotency-Key": "contains space"},
+	)
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf(
+			"invalid idempotency key status = %d",
+			response.Code,
+		)
+	}
+}
+
+func TestAPIIdempotentReplayAfterDelete(t *testing.T) {
+	handler, store := newTestAPI(t, standardTestIssues()[:1])
+	headers := map[string]string{
+		"X-Actor":         "delete-replay-api",
+		"Idempotency-Key": "delete-replay-key",
+	}
+	payload := CreateIssueRequest{
+		Title: "删除后仍可幂等重放",
+		Scene: "泵房区",
+		Pos:   &Position{X: 3, Y: 1, Z: 4},
+	}
+
+	createdResponse := requestJSON(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/issues",
+		payload,
+		headers,
+	)
+	created := decodeResponse[Issue](t, createdResponse)
+	if createdResponse.Code != http.StatusCreated {
+		t.Fatalf("create status = %d", createdResponse.Code)
+	}
+
+	deleted := requestJSON(
+		t,
+		handler,
+		http.MethodDelete,
+		"/api/issues/"+created.ID,
+		nil,
+		headers,
+	)
+	if deleted.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d", deleted.Code)
+	}
+	if _, err := store.Get(created.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("deleted issue lookup = %v, want not found", err)
+	}
+
+	replayedResponse := requestJSON(
+		t,
+		handler,
+		http.MethodPost,
+		"/api/issues",
+		payload,
+		headers,
+	)
+	replayed := decodeResponse[Issue](t, replayedResponse)
+	if replayedResponse.Code != http.StatusCreated ||
+		replayed.ID != created.ID ||
+		replayedResponse.Header().Get("Idempotency-Replayed") != "true" {
+		t.Fatalf(
+			"delete/replay mismatch: status=%d id=%s header=%s",
+			replayedResponse.Code,
+			replayed.ID,
+			replayedResponse.Header().Get("Idempotency-Replayed"),
+		)
+	}
+	if got := len(store.FilterAll(Filter{})); got != 1 {
+		t.Fatalf("replay recreated deleted issue: count=%d", got)
+	}
+}
+
 func TestAPIBatchOperations(t *testing.T) {
 	handler, _ := newTestAPI(t, standardTestIssues()[:3])
 	headers := map[string]string{"X-Actor": "batch-api"}
@@ -175,6 +341,12 @@ func TestAPIValidationAndCORS(t *testing.T) {
 	if preflight.Code != http.StatusNoContent ||
 		preflight.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" {
 		t.Fatalf("unexpected preflight: %d %v", preflight.Code, preflight.Header())
+	}
+	if !strings.Contains(
+		preflight.Header().Get("Access-Control-Allow-Headers"),
+		"Idempotency-Key",
+	) {
+		t.Fatalf("preflight must allow Idempotency-Key")
 	}
 
 	forbidden := requestJSON(t, handler, http.MethodGet, "/api/health", nil,

@@ -83,15 +83,27 @@ func (a *api) handleCreateIssue(w http.ResponseWriter, r *http.Request) {
 		writeRequestError(w, err)
 		return
 	}
+	idempotencyKey, err := idempotencyKeyFrom(r)
+	if err != nil {
+		writeRequestError(w, err)
+		return
+	}
 	var req CreateIssueRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeRequestError(w, validationRequestError("_request", err.Error()))
 		return
 	}
-	issue, err := a.store.Create(req, actor)
+	issue, replayed, err := a.store.CreateIdempotent(
+		req,
+		actor,
+		idempotencyKey,
+	)
 	if err != nil {
 		writeStoreError(w, err)
 		return
+	}
+	if replayed {
+		w.Header().Set("Idempotency-Replayed", "true")
 	}
 	writeJSON(w, http.StatusCreated, issue)
 }
@@ -324,6 +336,31 @@ func actorFrom(r *http.Request) (string, error) {
 	return actor, nil
 }
 
+func idempotencyKeyFrom(r *http.Request) (string, error) {
+	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if key == "" {
+		return "", nil
+	}
+	if len([]rune(key)) > 128 {
+		return "", &ValidationError{Fields: map[string]string{
+			"Idempotency-Key": "长度不能超过 128 个字符",
+		}}
+	}
+	for _, value := range key {
+		isLetter := value >= 'a' && value <= 'z' ||
+			value >= 'A' && value <= 'Z'
+		isDigit := value >= '0' && value <= '9'
+		isSeparator := value == '-' || value == '_' ||
+			value == '.' || value == ':'
+		if !isLetter && !isDigit && !isSeparator {
+			return "", &ValidationError{Fields: map[string]string{
+				"Idempotency-Key": "只能包含字母、数字、连字符、下划线、句点或冒号",
+			}}
+		}
+	}
+	return key, nil
+}
+
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
@@ -357,6 +394,14 @@ func writeStoreError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "VALIDATION_ERROR", "请求字段不合法", validation.Fields)
 	case errors.Is(err, ErrNotFound):
 		writeError(w, http.StatusNotFound, "NOT_FOUND", "问题记录不存在", nil)
+	case errors.Is(err, ErrIdempotencyConflict):
+		writeError(
+			w,
+			http.StatusConflict,
+			"IDEMPOTENCY_CONFLICT",
+			"相同 Idempotency-Key 不能用于不同请求内容",
+			nil,
+		)
 	default:
 		log.Printf("request failed: %v", err)
 		writeError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "服务端处理失败", nil)
@@ -391,7 +436,10 @@ func (a *api) withCORS(next http.Handler) http.Handler {
 			}
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Actor")
+			w.Header().Set(
+				"Access-Control-Allow-Headers",
+				"Content-Type, X-Actor, Idempotency-Key",
+			)
 			w.Header().Set("Access-Control-Max-Age", "600")
 			w.Header().Set("Vary", "Origin")
 		}

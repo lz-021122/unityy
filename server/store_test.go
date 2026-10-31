@@ -314,6 +314,316 @@ func TestStoreConcurrentAccess(t *testing.T) {
 	}
 }
 
+func TestStoreCreateIdempotentPersistsAcrossRestart(t *testing.T) {
+	store, _, dataPath := newTestStore(t, standardTestIssues()[:1])
+	payload := CreateIssueRequest{
+		Title: "重启后保持幂等",
+		Scene: "泵房区",
+		Pos:   &Position{X: 3, Y: 1, Z: 2},
+	}
+
+	first, replayed, err := store.CreateIdempotent(
+		payload,
+		"restart-test",
+		"restart-idempotency-key",
+	)
+	if err != nil || replayed {
+		t.Fatalf("first idempotent create = %+v, replayed=%v, err=%v", first, replayed, err)
+	}
+
+	reloaded, err := NewStore("unused-seed.json", dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, replayed, err := reloaded.CreateIdempotent(
+		payload,
+		"restart-test",
+		"restart-idempotency-key",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !replayed || second.ID != first.ID {
+		t.Fatalf("idempotency did not survive restart: %+v vs %+v", first, second)
+	}
+	if got := len(reloaded.FilterAll(Filter{})); got != 2 {
+		t.Fatalf("restart replay changed record count: %d", got)
+	}
+}
+
+func TestStoreIdempotencyConflictAndExpiry(t *testing.T) {
+	store, _, _ := newTestStore(t, standardTestIssues()[:1])
+	now := mustTime("2026-10-30T08:00:00Z")
+	store.now = func() time.Time { return now }
+	payload := CreateIssueRequest{
+		Title: "幂等有效期",
+		Scene: "其他",
+		Pos:   &Position{X: 1, Y: 2, Z: 3},
+	}
+
+	first, replayed, err := store.CreateIdempotent(
+		payload,
+		"expiry-test",
+		"expiry-idempotency-key",
+	)
+	if err != nil || replayed {
+		t.Fatalf("first create failed: %v", err)
+	}
+
+	changed := payload
+	changed.Title = "同一 Key 不同内容"
+	if _, _, err := store.CreateIdempotent(
+		changed,
+		"expiry-test",
+		"expiry-idempotency-key",
+	); !errors.Is(err, ErrIdempotencyConflict) {
+		t.Fatalf("expected idempotency conflict, got %v", err)
+	}
+	if got := len(store.FilterAll(Filter{})); got != 2 {
+		t.Fatalf("conflicting request changed record count: %d", got)
+	}
+
+	store.now = func() time.Time { return now.Add(IdempotencyTTL) }
+	afterExpiry, replayed, err := store.CreateIdempotent(
+		payload,
+		"expiry-test",
+		"expiry-idempotency-key",
+	)
+	if err != nil || replayed {
+		t.Fatalf("expired idempotency create failed: %v", err)
+	}
+	if afterExpiry.ID == first.ID {
+		t.Fatalf("expired key unexpectedly replayed %s", first.ID)
+	}
+}
+
+func TestStoreConcurrentIdempotentCreates(t *testing.T) {
+	store, _, _ := newTestStore(t, standardTestIssues()[:1])
+	const attempts = 20
+	payload := CreateIssueRequest{
+		Title: "并发幂等创建",
+		Scene: "泵房区",
+		Pos:   &Position{X: 4, Y: 1, Z: 5},
+	}
+	ids := make(chan string, attempts)
+	errs := make(chan error, attempts)
+	var wait sync.WaitGroup
+
+	for index := 0; index < attempts; index++ {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			issue, _, err := store.CreateIdempotent(
+				payload,
+				"concurrent-idempotency",
+				"concurrent-idempotency-key",
+			)
+			if err != nil {
+				errs <- err
+				return
+			}
+			ids <- issue.ID
+		}()
+	}
+	wait.Wait()
+	close(ids)
+	close(errs)
+
+	for err := range errs {
+		t.Fatalf("concurrent idempotent create failed: %v", err)
+	}
+	seen := map[string]struct{}{}
+	for id := range ids {
+		seen[id] = struct{}{}
+	}
+	if len(seen) != 1 {
+		t.Fatalf("concurrent idempotent creates produced IDs %v", seen)
+	}
+	if got := len(store.FilterAll(Filter{})); got != 2 {
+		t.Fatalf("concurrent idempotent count = %d, want 2 total", got)
+	}
+}
+
+func TestStoreIdempotencySurvivesDeleteAndRestart(t *testing.T) {
+	store, _, dataPath := newTestStore(t, standardTestIssues()[:1])
+	payload := CreateIssueRequest{
+		Title: "删除后重启幂等",
+		Scene: "泵房区",
+		Pos:   &Position{X: 5, Y: 1, Z: 6},
+	}
+
+	created, replayed, err := store.CreateIdempotent(
+		payload,
+		"delete-restart-test",
+		"delete-restart-key",
+	)
+	if err != nil || replayed {
+		t.Fatalf("create = %+v, replayed=%v, err=%v", created, replayed, err)
+	}
+	if err := store.Delete(created.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	reloaded, err := NewStore("unused-seed.json", dataPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayedIssue, replayed, err := reloaded.CreateIdempotent(
+		payload,
+		"delete-restart-test",
+		"delete-restart-key",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !replayed || replayedIssue.ID != created.ID {
+		t.Fatalf(
+			"delete/restart replay = %+v, replayed=%v, want %s",
+			replayedIssue,
+			replayed,
+			created.ID,
+		)
+	}
+	if got := len(reloaded.FilterAll(Filter{})); got != 1 {
+		t.Fatalf("delete/restart replay recreated issue: count=%d", got)
+	}
+	if _, err := reloaded.Get(created.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("deleted issue unexpectedly exists after restart: %v", err)
+	}
+}
+
+func TestStoreIdempotencyExpiryDoesNotRemoveOtherRecords(t *testing.T) {
+	store, _, _ := newTestStore(t, standardTestIssues()[:1])
+	current := mustTime("2026-10-30T08:00:00Z")
+	store.now = func() time.Time { return current }
+
+	payloadA := CreateIssueRequest{
+		Title: "过期 Key A",
+		Scene: "其他",
+		Pos:   &Position{X: 1, Y: 1, Z: 1},
+	}
+	payloadB := CreateIssueRequest{
+		Title: "未过期 Key B",
+		Scene: "其他",
+		Pos:   &Position{X: 2, Y: 2, Z: 2},
+	}
+	firstA, _, err := store.CreateIdempotent(payloadA, "expiry-a", "expiry-key-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	current = current.Add(IdempotencyTTL - time.Hour)
+	firstB, _, err := store.CreateIdempotent(payloadB, "expiry-b", "expiry-key-b")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	current = current.Add(time.Hour)
+	secondA, replayed, err := store.CreateIdempotent(
+		payloadA,
+		"expiry-a",
+		"expiry-key-a",
+	)
+	if err != nil || replayed {
+		t.Fatalf("expired create = %+v, replayed=%v, err=%v", secondA, replayed, err)
+	}
+	if secondA.ID == firstA.ID {
+		t.Fatalf("expired key unexpectedly replayed %s", firstA.ID)
+	}
+
+	secondB, replayed, err := store.CreateIdempotent(
+		payloadB,
+		"expiry-b",
+		"expiry-key-b",
+	)
+	if err != nil || !replayed || secondB.ID != firstB.ID {
+		t.Fatalf(
+			"unexpired key was affected by cleanup: issue=%+v replayed=%v err=%v",
+			secondB,
+			replayed,
+			err,
+		)
+	}
+}
+
+func TestStoreBatchDeleteRetainsIdempotencyRecords(t *testing.T) {
+	store, _, _ := newTestStore(t, standardTestIssues()[:2])
+	payloadA := CreateIssueRequest{
+		Title: "批量删除幂等 A",
+		Scene: "泵房区",
+		Pos:   &Position{X: 3, Y: 1, Z: 5},
+	}
+	payloadB := CreateIssueRequest{
+		Title: "批量删除幂等 B",
+		Scene: "管道区",
+		Pos:   &Position{X: 4, Y: 2, Z: 6},
+	}
+
+	createdA, _, err := store.CreateIdempotent(
+		payloadA,
+		"batch-delete-test",
+		"batch-delete-key-a",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	createdB, _, err := store.CreateIdempotent(
+		payloadB,
+		"batch-delete-test",
+		"batch-delete-key-b",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	deleted, err := store.BatchDelete([]string{createdA.ID, createdB.ID})
+	if err != nil || deleted != 2 {
+		t.Fatalf("BatchDelete = %d, %v", deleted, err)
+	}
+	if _, err := store.Get(createdA.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("issue A still exists after batch delete: %v", err)
+	}
+	if _, err := store.Get(createdB.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("issue B still exists after batch delete: %v", err)
+	}
+
+	replayedA, replayed, err := store.CreateIdempotent(
+		payloadA,
+		"batch-delete-test",
+		"batch-delete-key-a",
+	)
+	if err != nil || !replayed || replayedA.ID != createdA.ID {
+		t.Fatalf(
+			"batch-delete replay A = %+v, replayed=%v, err=%v",
+			replayedA,
+			replayed,
+			err,
+		)
+	}
+	replayedB, replayed, err := store.CreateIdempotent(
+		payloadB,
+		"batch-delete-test",
+		"batch-delete-key-b",
+	)
+	if err != nil || !replayed || replayedB.ID != createdB.ID {
+		t.Fatalf(
+			"batch-delete replay B = %+v, replayed=%v, err=%v",
+			replayedB,
+			replayed,
+			err,
+		)
+	}
+	if got := len(store.FilterAll(Filter{})); got != 2 {
+		t.Fatalf("batch-delete replay changed remaining count: %d", got)
+	}
+	if _, err := store.Get("#001"); err != nil {
+		t.Fatalf("untouched issue #001 was affected: %v", err)
+	}
+	if _, err := store.Get("#002"); err != nil {
+		t.Fatalf("untouched issue #002 was affected: %v", err)
+	}
+}
+
 func mustJSON(t *testing.T, value any) []byte {
 	t.Helper()
 	data, err := json.Marshal(value)
